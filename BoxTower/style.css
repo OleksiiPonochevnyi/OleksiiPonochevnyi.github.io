@@ -1,0 +1,27 @@
+body{
+	background: #303030;
+	text-align: center;
+}
+h1,h2{
+	color:whitesmoke;
+}
+#game-field{
+	width: 400px;
+	height: 500px;
+	background: black;
+	border: 10px solid orange;
+	position: relative;
+	margin: 20px auto 20px auto;
+	/*margin: 20px*/
+}
+.block{
+	width: 40px;
+	height: 40px;
+	background: coral;
+	position: absolute;
+	transition: top 0.4s ease-in, transform 0.6s ease-in, opacity 0.6s;
+}
+.collapse{
+	transform: translateY(800px) rotate(120deg);
+	opacity: 0;
+}
