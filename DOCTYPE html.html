@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nokia Dino</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: monospace; overflow: hidden; text-align: center; }
+        canvas { display: block; margin: 10px auto; background: #222; border-bottom: 2px solid #0f0; }
+        #ui { font-size: 14px; margin-top: 5px; color: #0f0; }
+    </style>
+</head>
+<body>
+    <div id="ui">SCORE: <span id="score">0</span></div>
+    <canvas id="gameCanvas"></canvas>
+    <div style="font-size: 10px;">Pulsa el [5] para saltar</div>
+
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+
+    // Dimensiones para pantalla pequeña
+    canvas.width = 160;
+    canvas.height = 120;
+
+    let score = 0;
+    let gameActive = true;
+    let speed = 3;
+    
+    const dino = {
+        x: 20,
+        y: 80,
+        w: 15,
+        h: 20,
+        dy: 0,
+        jumpForce: -4.5,
+        gravity: 0.25,
+        grounded: true
+    };
+
+    let obstacles = [];
+
+    function spawnObstacle() {
+        if (Math.random() < 0.02) {
+            obstacles.push({
+                x: canvas.width,
+                y: 85,
+                w: 10,
+                h: 15
+            });
+        }
+    }
+
+    function update() {
+        if (!gameActive) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Suelo
+        ctx.strokeStyle = "#555";
+        ctx.beginPath();
+        ctx.moveTo(0, 100); ctx.lineTo(canvas.width, 100);
+        ctx.stroke();
+
+        // Gravedad y Salto
+        if (!dino.grounded) {
+            dino.dy += dino.gravity;
+            dino.y += dino.dy;
+        }
+
+        if (dino.y >= 80) {
+            dino.y = 80;
+            dino.dy = 0;
+            dino.grounded = true;
+        }
+
+        // Dibujar Dino (Coche o Bloque azul)
+        ctx.fillStyle = "#0af";
+        ctx.fillRect(dino.x, dino.y, dino.w, dino.h);
+
+        // Obstáculos
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            let o = obstacles[i];
+            o.x -= speed;
+
+            ctx.fillStyle = "#f33";
+            ctx.fillRect(o.x, o.y, o.w, o.h);
+
+            // Colisión
+            if (dino.x < o.x + o.w &&
+                dino.x + dino.w > o.x &&
+                dino.y < o.y + o.h &&
+                dino.y + dino.h > o.y) {
+                gameActive = false;
+                alert("GAME OVER! Score: " + Math.floor(score));
+                location.reload();
+            }
+
+            if (o.x + o.w < 0) {
+                obstacles.splice(i, 1);
+                score += 1;
+                scoreEl.innerText = Math.floor(score);
+                if (score % 10 === 0) speed += 0.2;
+            }
+        }
+
+        spawnObstacle();
+        requestAnimationFrame(update);
+    }
+
+    // Control Tecla 5 o Enter
+    window.addEventListener("keydown", (e) => {
+        if ((e.key === "5" || e.keyCode === 53 || e.keyCode === 13) && dino.grounded) {
+            dino.dy = dino.jumpForce;
+            dino.grounded = false;
+        }
+    });
+
+    update();
+</script>
+</body>
+</html>
