@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doodle Nokia Pro</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; text-align: center; font-family: monospace; overflow: hidden; }
+        canvas { background: #1a1a1a; display: block; margin: 0 auto; border: 2px solid #333; }
+        #s { font-size: 16px; padding: 5px; color: #0f0; }
+    </style>
+</head>
+<body>
+    <div id="s">SCORE: 0</div>
+    <canvas id="g" width="160" height="240"></canvas>
+
+<script>
+    const canvas = document.getElementById('g');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('s');
+
+    let score = 0;
+    let player = { x: 72, y: 170, w: 16, h: 16, vy: 0 };
+    let platforms = [];
+    const gravity = 0.22;
+    const jump = -4.8;
+
+    // --- INICIALIZACIÓN SEGURA ---
+    function initGame() {
+        platforms = [];
+        // 1. Plataforma inicial justo bajo el jugador
+        platforms.push({ x: 60, y: 200, w: 40, h: 8 });
+        
+        // 2. Resto de plataformas aleatorias arriba
+        for(let i=0; i<5; i++) {
+            platforms.push({ 
+                x: Math.random() * 120, 
+                y: i * 40, 
+                w: 35, 
+                h: 8 
+            });
+        }
+    }
+
+    function update() {
+        player.vy += gravity;
+        player.y += player.vy;
+
+        // Si sube mucho, la cámara (plataformas) baja
+        if (player.y < 110) {
+            let diff = 110 - player.y;
+            player.y = 110;
+            score += Math.floor(diff/10); 
+            scoreEl.innerText = "SCORE: " + score;
+            
+            platforms.forEach(p => {
+                p.y += diff; 
+                if (p.y > 240) {
+                    p.y = 0;
+                    p.x = Math.random() * 125;
+                }
+            });
+        }
+
+        // Colisión (solo cuando el jugador cae)
+        if (player.vy > 0) {
+            platforms.forEach(p => {
+                if (player.x < p.x + p.w && 
+                    player.x + player.w > p.x &&
+                    player.y + player.h > p.y && 
+                    player.y + player.h < p.y + p.h + 12) {
+                    player.vy = jump; // ¡Salto!
+                }
+            });
+        }
+
+        // Caída al vacío
+        if (player.y > 250) {
+            alert("FIN! Puntos: " + score);
+            score = 0;
+            player.y = 170;
+            player.x = 72;
+            player.vy = 0;
+            initGame();
+        }
+
+        // Dibujar todo
+        ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,160,240);
+        
+        ctx.fillStyle = '#0f0'; // Plataformas seguras
+        platforms.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
+        ctx.fillStyle = '#55f'; // Jugador (Azul Nokia)
+        ctx.fillRect(player.x, player.y, player.w, player.h);
+
+        requestAnimationFrame(update);
+    }
+
+    // Controles teclado físico
+    window.addEventListener('keydown', (e) => {
+        if (e.key === '4' || e.keyCode === 52) player.x -= 12;
+        if (e.key === '6' || e.keyCode === 54) player.x += 12;
+        
+        // Atravesar paredes laterales
+        if (player.x < -10) player.x = 155;
+        if (player.x > 160) player.x = -5;
+    });
+
+    initGame();
+    update();
+</script>
+</body>
+</html>
