@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NOKIA DRIFT</title>
+    <style>
+        body { 
+            margin: 0; background: #000; color: #0f0; 
+            font-family: monospace; overflow: hidden; 
+            display: flex; justify-content: center;
+        }
+        canvas { border: 1px solid #555; background: #000; }
+        #ui { position: absolute; top: 5px; width: 240px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div id="ui">SCORE: <span id="s">0</span></div>
+    <canvas id="g"></canvas>
+
+    <script>
+        const canvas = document.getElementById('g');
+        const ctx = canvas.getContext('2d');
+        const sEl = document.getElementById('s');
+
+        canvas.width = 240;
+        canvas.height = 320;
+
+        let player = { x: 110, y: 270, w: 20, h: 20 };
+        let enemies = [];
+        let score = 0;
+        let frame = 0;
+        let alive = true;
+
+        function draw() {
+            if (!alive) return;
+
+            // Limpiar pantalla
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar Jugador (Verde Nokia)
+            ctx.fillStyle = "#0f0";
+            ctx.fillRect(player.x, player.y, player.w, player.h);
+
+            // Generar enemigos
+            if (frame % 30 === 0) {
+                enemies.push({ x: Math.random() * 220, y: -20, w: 20, h: 20 });
+            }
+
+            // Mover y dibujar enemigos
+            ctx.fillStyle = "red";
+            for (let i = 0; i < enemies.length; i++) {
+                let e = enemies[i];
+                e.y += 5;
+                ctx.fillRect(e.x, e.y, e.w, e.h);
+
+                // Colisión simple
+                if (e.x < player.x + player.w && e.x + e.w > player.x &&
+                    e.y < player.y + player.h && e.y + e.h > player.y) {
+                    alive = false;
+                    alert("GAME OVER. Score: " + score);
+                    location.reload();
+                }
+
+                if (e.y > 320) {
+                    enemies.splice(i, 1);
+                    score++;
+                    sEl.innerText = score;
+                }
+            }
+
+            frame++;
+            requestAnimationFrame(draw);
+        }
+
+        // Controles para teclado físico de Nokia
+        window.addEventListener('keydown', (e) => {
+            // Tecla 4 o Flecha Izquierda
+            if (e.key === '4' || e.keyCode === 37) player.x -= 20;
+            // Tecla 6 o Flecha Derecha
+            if (e.key === '6' || e.keyCode === 39) player.x += 20;
+            
+            // Limites
+            if (player.x < 0) player.x = 0;
+            if (player.x > 220) player.x = 220;
+        });
+
+        draw();
+    </script>
+</body>
+</html>
