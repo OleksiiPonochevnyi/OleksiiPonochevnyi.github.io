@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NokiaGotchi</title>
+    <style>
+        body { margin: 0; background: #000; color: #0f0; font-family: monospace; text-align: center; }
+        #screen { border: 2px solid #333; width: 150px; height: 150px; margin: 10px auto; position: relative; background: #222; }
+        #pet { font-size: 40px; position: absolute; top: 40px; left: 55px; }
+        .stat { font-size: 10px; }
+        #menu { font-size: 11px; margin-top: 10px; color: #fff; }
+    </style>
+</head>
+<body>
+    <div id="screen">
+        <div id="stat-bar" class="stat">
+            H: <span id="h">100</span>% | S: <span id="s">100</span>%
+        </div>
+        <div id="pet">o_o</div>
+        <div id="msg" style="position:absolute; bottom:10px; width:100%; font-size:10px;"></div>
+    </div>
+    <div id="menu">
+        [1] Comer | [2] Dormir<br>
+        [3] Curar | [0] Reset
+    </div>
+
+<script>
+    var hunger = localStorage.getItem('gotchi_h') ? parseInt(localStorage.getItem('gotchi_h')) : 100;
+    var sleep = localStorage.getItem('gotchi_s') ? parseInt(localStorage.getItem('gotchi_s')) : 100;
+    var isDead = false;
+
+    function updateUI() {
+        document.getElementById('h').innerText = hunger;
+        document.getElementById('s').innerText = sleep;
+        var p = document.getElementById('pet');
+        var m = document.getElementById('msg');
+
+        if (hunger <= 0 || sleep <= 0) {
+            p.innerText = "x_x";
+            m.innerText = "HA MUERTO...";
+            isDead = true;
+        } else if (hunger < 30 || sleep < 30) {
+            p.innerText = "o_O";
+            m.innerText = "TENGO HAMBRE/SUEÑO";
+        } else {
+            p.innerText = "o_o";
+            m.innerText = "FELIZ";
+        }
+    }
+
+    // El tiempo pasa cada 5 segundos
+    setInterval(function() {
+        if (!isDead) {
+            hunger -= 2;
+            sleep -= 1;
+            if (hunger < 0) hunger = 0;
+            if (sleep < 0) sleep = 0;
+            
+            // Guardar progreso en el Nokia
+            localStorage.setItem('gotchi_h', hunger);
+            localStorage.setItem('gotchi_s', sleep);
+            updateUI();
+        }
+    }, 5000);
+
+    window.onkeydown = function(e) {
+        var k = e.keyCode || e.which;
+        if (isDead && k != 48) return;
+
+        if (k == 49) { // Tecla 1 - Comer
+            hunger += 20;
+            if (hunger > 100) hunger = 100;
+        }
+        if (k == 50) { // Tecla 2 - Dormir
+            sleep += 30;
+            if (sleep > 100) sleep = 100;
+        }
+        if (k == 51) { // Tecla 3 - Curar
+            if (isDead) return;
+            hunger = 50; sleep = 50;
+        }
+        if (k == 48) { // Tecla 0 - Reset
+            hunger = 100; sleep = 100; isDead = false;
+        }
+        
+        updateUI();
+    };
+
+    updateUI();
+</script>
+</body>
+</html>
