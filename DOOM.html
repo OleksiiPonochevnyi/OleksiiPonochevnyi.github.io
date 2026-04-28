@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nokia3D</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: monospace; }
+        canvas { display: block; margin: 0 auto; background: #000; }
+        #ui { color: #0f0; position: absolute; top: 5px; width: 100%; text-align: center; font-size: 10px; }
+    </style>
+</head>
+<body>
+    <div id="ui">2-8: Mover | 4-6: Girar</div>
+    <canvas id="g"></canvas>
+
+<script>
+    const canvas = document.getElementById('g');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 160; 
+    canvas.height = 120;
+
+    // Mapa: 1 = Pared, 0 = Vacío
+    const map = [
+        [1,1,1,1,1,1,1,1],
+        [1,0,0,0,0,0,0,1],
+        [1,0,1,1,0,1,0,1],
+        [1,0,0,0,0,1,0,1],
+        [1,0,1,0,0,0,0,1],
+        [1,0,1,0,1,1,0,1],
+        [1,0,0,0,0,0,0,1],
+        [1,1,1,1,1,1,1,1]
+    ];
+
+    let p = { x: 1.5, y: 1.5, dir: 0 }; // Jugador
+
+    function draw() {
+        ctx.fillStyle = "#333"; // Suelo
+        ctx.fillRect(0, 60, 160, 60);
+        ctx.fillStyle = "#111"; // Techo
+        ctx.fillRect(0, 0, 160, 60);
+
+        // Raycasting (lanzamos 40 rayos para no saturar el móvil)
+        for (let i = 0; i < 40; i++) {
+            let angle = (p.dir - 0.5) + (i / 40);
+            let dist = 0;
+            let hit = false;
+            
+            let cx = Math.cos(angle);
+            let sy = Math.sin(angle);
+
+            while (!hit && dist < 10) {
+                dist += 0.1;
+                let testX = Math.floor(p.x + cx * dist);
+                let testY = Math.floor(p.y + sy * dist);
+                if (map[testY][testX] === 1) hit = true;
+            }
+
+            // Dibujar columna
+            let h = 120 / dist;
+            let color = 255 - (dist * 20); // Sombra por distancia
+            ctx.fillStyle = "rgb(0," + color + ",0)";
+            ctx.fillRect(i * 4, 60 - h/2, 4, h);
+        }
+        requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('keydown', (e) => {
+        let nx = p.x, ny = p.y;
+        if (e.key === '2' || e.keyCode === 50) { nx += Math.cos(p.dir)*0.2; ny += Math.sin(p.dir)*0.2; }
+        if (e.key === '8' || e.keyCode === 56) { nx -= Math.cos(p.dir)*0.2; ny -= Math.sin(p.dir)*0.2; }
+        if (e.key === '4' || e.keyCode === 52) p.dir -= 0.2;
+        if (e.key === '6' || e.keyCode === 54) p.dir += 0.2;
+
+        // Colisión básica
+        if (map[Math.floor(ny)][Math.floor(nx)] === 0) {
+            p.x = nx; p.y = ny;
+        }
+    });
+
+    draw();
+</script>
+</body>
+</html>
