@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vida</title>
+    <style>
+        body { margin: 0; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
+        #c { display: block; margin: 0 auto; background: #111; }
+    </style>
+</head>
+<body>
+    <div id="u" style="font-size:10px;text-align:center">5:Poner | 0:Play</div>
+    <canvas id="c"></canvas>
+
+<script>
+    var canvas = document.getElementById('c');
+    var ctx = canvas.getContext('2d');
+    var ROWS = 15;
+    var COLS = 15;
+    var SIZE = 10;
+    canvas.width = 150;
+    canvas.height = 150;
+
+    // Crear la rejilla de forma antigua para máxima compatibilidad
+    var grid = [];
+    for(var i=0; i<ROWS; i++) {
+        grid[i] = [];
+        for(var j=0; j<COLS; j++) {
+            grid[i][j] = 0;
+        }
+    }
+
+    var curX = 7;
+    var curY = 7;
+    var running = false;
+
+    function loop() {
+        // Dibujar fondo
+        ctx.fillStyle = "#111";
+        ctx.fillRect(0, 0, 150, 150);
+        
+        // Dibujar células
+        ctx.fillStyle = "#0f0";
+        for (var r = 0; r < ROWS; r++) {
+            for (var c = 0; c < COLS; c++) {
+                if (grid[r][c] === 1) {
+                    ctx.fillRect(c * SIZE, r * SIZE, SIZE - 1, SIZE - 1);
+                }
+            }
+        }
+
+        // Dibujar cursor blanco
+        ctx.strokeStyle = "#fff";
+        ctx.strokeRect(curX * SIZE, curY * SIZE, SIZE, SIZE);
+
+        if (running) {
+            var next = [];
+            for(var r=0; r<ROWS; r++) {
+                next[r] = [];
+                for(var c=0; c<COLS; c++) {
+                    var n = 0;
+                    for(var i=-1; i<2; i++) {
+                        for(var j=-1; j<2; j++) {
+                            if(i===0 && j===0) continue;
+                            var row = (r + i + ROWS) % ROWS;
+                            var col = (c + j + COLS) % COLS;
+                            n += grid[row][col];
+                        }
+                    }
+                    if (grid[r][c] === 1 && (n < 2 || n > 3)) next[r][c] = 0;
+                    else if (grid[r][c] === 0 && n === 3) next[r][c] = 1;
+                    else next[r][c] = grid[r][c];
+                }
+            }
+            grid = next;
+        }
+        setTimeout(loop, 200);
+    }
+
+    window.onkeydown = function(e) {
+        var k = e.keyCode || e.which;
+        if (k == 50) curY = (curY - 1 + ROWS) % ROWS; // 2
+        if (k == 56) curY = (curY + 1) % ROWS;        // 8
+        if (k == 52) curX = (curX - 1 + COLS) % COLS; // 4
+        if (k == 54) curX = (curX + 1) % COLS;        // 6
+        if (k == 53) grid[curY][curX] = grid[curY][curX] ? 0 : 1; // 5
+        if (k == 48) running = !running;             // 0
+    };
+
+    loop();
+</script>
+</body>
+</html>
