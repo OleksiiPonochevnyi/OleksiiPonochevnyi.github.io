@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: monospace; overflow: hidden; text-align: center; }
+        canvas { border: 2px solid #777; background: #111; image-rendering: pixelated; margin-top: 5px; }
+        .ui { font-size: 10px; padding: 2px; font-weight: bold; background: #222; }
+    </style>
+</head>
+<body>
+    <div class="ui" id="ui">CARGANDO...</div>
+    <canvas id="g" width="160" height="128"></canvas>
+    <div style="font-size: 8px; color: #aaa; margin-top: 2px;">2,8,4,6:Mover | 5:Atacar | 0:Tienda</div>
+
+<script>
+    const canvas = document.getElementById('g');
+    const ctx = canvas.getContext('2d');
+    const S = 16; 
+
+    let state = 0; 
+    let menuSel = 0; 
+    let level = 1;
+    let msg = ""; 
+    let coins = 0;
+    let shopSel = 0;
+    
+    const skins = [
+        { name: "VERDE", color: "#0f0", cost: 0 },
+        { name: "AZUL", color: "#08f", cost: 5 },
+        { name: "ORO", color: "#fd0", cost: 10 }
+    ];
+
+    let p = { x: 1, y: 1, hp: 5, s: 0, skin: "#0f0" };
+    let bossLevel = 1;
+    let boss = { x: 3, y: 2, w: 3, h: 3, hp: 10, dx: 1, dy: 1 };
+    let map = [];
+    let enemiesList = []; 
+
+    function initExplore() {
+        level++;
+        let validMap = false;
+        while(!validMap) {
+            map = [];
+            for(let y=0; y<8; y++) {
+                let row = [];
+                for(let x=0; x<10; x++) {
+                    if(x===0 || x===9 || y===0 || y===7) row.push(1);
+                    else row.push(Math.random() < 0.2 ? 1 : 0); 
+                }
+                map.push(row);
+            }
+            map[1][1] = 0; map[1][2] = 0; map[2][1] = 0; 
+            map[6][8] = 4; // Salida
+
+            let nonWalls = 0;
+            for(let y=1; y<7; y++) for(let x=1; x<9; x++) if(map[y][x] !== 1) nonWalls++;
+
+            let visited = Array(8).fill(0).map(()=>Array(10).fill(false));
+            let q = [{x:1, y:1}];
+            visited[1][1] = true;
+            let reachable = 0;
+
+            while(q.length > 0) {
+                let c = q.pop();
+                reachable++;
+                [[0,1], [1,0], [0,-1], [-1,0]].forEach(d => {
+                    let nx = c.x + d[0], ny = c.y + d[1];
+                    if(nx>0 && nx<9 && ny>0 && ny<7 && !visited[ny][nx] && map[ny][nx] !== 1) {
+                        visited[ny][nx] = true;
+                        q.push({x:nx, y:ny});
+                    }
+                });
+            }
+            if(reachable === nonWalls) validMap = true; 
+        }
+
+        p.x = 1; p.y = 1; 
+        enemiesList = [];
+        let enemies = Math.min(level, 5);
+        while(enemies > 0) {
+            let rx = Math.floor(Math.random()*8)+1, ry = Math.floor(Math.random()*6)+1;
+            if(map[ry][rx] === 0 && (rx > 3 || ry > 3)) { enemiesList.push({x: rx, y: ry}); enemies--; }
+        }
+    }
+
+    function initBoss() {
+        p.x = 4; p.y = 6;
+        boss.x = 3; boss.y = 1; 
+        boss.hp = 10 + (bossLevel * 5); 
+        boss.w = Math.max(1, 4 - bossLevel); boss.h = boss.w;
+    }
+
+    function showMessage(texto) {
+        state = 3; msg = texto; draw();
+        setTimeout(() => { location.reload(); }, 2000);
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, 160, 128);
+        let ui = document.getElementById('ui');
+
+        if (state === 3) {
+            ui.innerText = "FIN";
+            ctx.fillStyle = "white";
+            ctx.fillText(msg, 10, 64);
+            return;
+        }
+
+        if (state === 0) {
+            ui.innerText = "Cave Explorer By Fricerfox87";
+            ctx.fillStyle = "white";
+            ctx.fillText("MODO:", 30, 30);
+            ctx.fillStyle = menuSel === 0 ? "yellow" : "white";
+            ctx.fillText(menuSel === 0 ? "> BOSS RUSH" : "  BOSS RUSH", 30, 60);
+            ctx.fillStyle = menuSel === 1 ? "yellow" : "white";
+            ctx.fillText(menuSel === 1 ? "> EXPLORA" : "  EXPLORA", 30, 80);
+            return;
+        }
+
+        if (state === 4) {
+            ui.innerText = `TIENDA | 💰:${coins}`;
+            ctx.fillStyle = "white";
+            ctx.fillText("SELECCIONA (5:Ok 0:Exit)", 10, 20);
+            skins.forEach((s, i) => {
+                ctx.fillStyle = shopSel === i ? "yellow" : "white";
+                ctx.fillText(`${shopSel === i ? '>' : ' '} ${s.name} (${s.cost})`, 20, 50 + (i * 20));
+                ctx.fillStyle = s.color;
+                ctx.fillRect(120, 42 + (i*20), 10, 10);
+            });
+            return;
+        }
+
+        ui.innerText = `H:${p.hp} | ${state===1 ? 'B'+bossLevel+' HP:'+boss.hp : 'N:'+level+' $:'+coins}`;
+
+        if (state === 2) {
+            for(let y=0; y<8; y++) {
+                for(let x=0; x<10; x++) {
+                    let t = map[y][x];
+                    ctx.fillStyle = t === 1 ? '#555' : (t === 4 ? '#fd0' : '#111'); 
+                    if(t !== 0) ctx.fillRect(x*S, y*S, S-1, S-1);
+                }
+            }
+            ctx.fillStyle = '#f00';
+            enemiesList.forEach(e => ctx.fillRect(e.x*S+1, e.y*S+1, S-2, S-2));
+        }
+
+        if (state === 1) {
+            ctx.fillStyle = boss.hp > 5 ? '#f22' : '#a00';
+            ctx.fillRect(boss.x*S, boss.y*S, boss.w*S, boss.h*S);
+        }
+
+        if(p.s > 0) {
+            ctx.fillStyle = 'rgba(255,255,0,0.5)';
+            ctx.fillRect(p.x*S-S, p.y*S-S, S*3, S*3);
+            p.s--;
+        }
+
+        ctx.fillStyle = p.skin;
+        ctx.fillRect(p.x*S+2, p.y*S+2, S-4, S-4);
+    }
+
+    setInterval(() => {
+        if(state === 1) {
+            boss.x += boss.dx;
+            if(Math.random() < 0.4) boss.y += boss.dy; 
+            if(boss.x <= 0 || boss.x + boss.w >= 10) boss.dx *= -1;
+            if(boss.y <= 0 || boss.y + boss.h >= 8) boss.dy *= -1;
+            if(p.x >= boss.x && p.x < boss.x + boss.w && p.y >= boss.y && p.y < boss.y + boss.h) {
+                p.hp--; p.x = 4; p.y = 6;
+                if(p.hp <= 0) showMessage("¡GAME OVER!");
+            }
+        }
+        if(state === 2) {
+            enemiesList.forEach(e => {
+                if(Math.random() < 0.3) {
+                    let d = [[0,-1],[0,1],[-1,0],[1,0]][Math.floor(Math.random()*4)];
+                    let nx = e.x + d[0], ny = e.y + d[1];
+                    if(map[ny] && map[ny][nx] === 0) { e.x = nx; e.y = ny; }
+                }
+                if(e.x === p.x && e.y === p.y) {
+                    p.hp--; p.x = 1; p.y = 1;
+                    if(p.hp <= 0) showMessage("MUERTO");
+                }
+            });
+        }
+        if(state === 1 || state === 2) draw();
+    }, 400);
+
+    window.addEventListener('keydown', (e) => {
+        let k = e.key || String.fromCharCode(e.keyCode);
+        if (state === 3) return; 
+
+        if(state === 0) {
+            if(k === '2') menuSel = 0; if(k === '8') menuSel = 1;
+            if(k === '5') {
+                if(menuSel === 0) { state = 1; bossLevel = 1; initBoss(); }
+                else { state = 2; level = 0; coins = 0; p.hp = 5; initExplore(); }
+            }
+            draw(); return;
+        }
+
+        if(state === 4) {
+            if(k === '0' || k === '4') { state = 2; draw(); return; } 
+            if(k === '2') shopSel = Math.max(0, shopSel - 1);
+            if(k === '8') shopSel = Math.min(skins.length - 1, shopSel + 1);
+            if(k === '5') {
+                let s = skins[shopSel];
+                if(coins >= s.cost) { coins -= s.cost; p.skin = s.color; state = 2; }
+            }
+            draw(); return;
+        }
+
+        if(k === '0' && state === 2) { state = 4; shopSel = 0; draw(); return; }
+
+        let nx = p.x, ny = p.y;
+        if(k === '2') ny--; if(k === '8') ny++; if(k === '4') nx--; if(k === '6') nx++;
+
+        if(k === '5') {
+            p.s = 2; 
+            if(state === 2) {
+                for(let i = enemiesList.length - 1; i >= 0; i--) {
+                    if(Math.abs(enemiesList[i].x - p.x) <= 1 && Math.abs(enemiesList[i].y - p.y) <= 1) {
+                        enemiesList.splice(i, 1); coins++; 
+                    }
+                }
+            }
+            if(state === 1 && Math.abs(p.x - (boss.x+1)) <= 2 && Math.abs(p.y - (boss.y+1)) <= 2) {
+                boss.hp--;
+                if(boss.hp <= 0) { 
+                    bossLevel++;
+                    if(bossLevel > 3) showMessage("¡VICTORIA!"); else initBoss(); 
+                }
+            }
+        }
+
+        if(state === 2 && nx>=0 && nx<10 && ny>=0 && ny<8) {
+            let t = map[ny][nx];
+            if(t === 0) { p.x = nx; p.y = ny; }
+            else if(t === 4) initExplore();
+        } else if(state === 1 && nx>=0 && nx<10 && ny>=0 && ny<8) {
+            p.x = nx; p.y = ny;
+        }
+        draw();
+    });
+    draw();
+</script>
+</body>
+</html>
