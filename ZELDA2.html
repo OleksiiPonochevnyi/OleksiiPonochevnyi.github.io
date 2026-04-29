@@ -5,13 +5,13 @@
     <style>
         body { margin: 0; background: #000; color: #f00; font-family: monospace; overflow: hidden; text-align: center; }
         canvas { border: 1px solid #f00; background: #000; margin-top: 2px; }
-        #u { font-size: 10px; background: #100; border-bottom: 1px solid #f00; }
+        #u { font-size: 10px; background: #100; border-bottom: 1px solid #f00; height: 16px; }
     </style>
 </head>
 <body>
-    <div id="u">MODO HARDCORE</div>
+    <div id="u">CARGANDO...</div>
     <canvas id="g" width="160" height="128"></canvas>
-    <div style="font-size:8px;">5:Atacar | 0:Tienda | ¡CUIDADO CON LA LAVA!</div>
+    <div style="font-size:8px;">5:Atacar | 0:Tienda | CAMINO GARANTIZADO</div>
 
 <script>
     var canvas = document.getElementById('g');
@@ -19,27 +19,32 @@
     var ui = document.getElementById('u');
 
     var st = 0; var level = 0; var coins = 0; var hp = 5; var skinCol = "#0f0";
-    var px = 1; var py = 1; var slash = 0;
+    var px = 1; var py = 1; var slash = 0; var shopSel = 0;
     var map = [];
     var ex = [0,0,0,0,0]; var ey = [0,0,0,0,0]; var eLive = [0,0,0,0,0];
 
     function initExplore() {
         level++;
         map = [];
+        // 1. Llenar todo de paredes inicialmente
         for(var y=0; y<8; y++) {
             map[y] = [];
             for(var x=0; x<10; x++) {
                 if(x==0 || x==9 || y==0 || y==7) map[y][x] = 1;
-                else {
-                    var r = Math.random();
-                    if(r < 0.15) map[y][x] = 1; // Pared
-                    else if(r < 0.25) map[y][x] = 6; // LAVA (Muerte)
-                    else map[y][x] = 0;
-                }
+                else map[y][x] = (Math.random() < 0.3) ? 1 : (Math.random() < 0.15 ? 6 : 0);
             }
         }
-        map[1][1] = 0; map[6][8] = 4; // Salida
+
+        // 2. TÚNEL DE SEGURIDAD (Garantiza que siempre puedas llegar)
+        // Crea un camino limpio desde (1,1) hasta (8,6)
+        for(var tx=1; tx<=8; tx++) map[1][tx] = 0; // Pasillo horizontal superior
+        for(var ty=1; ty<=6; ty++) map[ty][8] = 0; // Pasillo vertical derecho
+
+        map[1][1] = 0; 
+        map[6][8] = 4; // Bloque Amarillo (Destino)
         px = 1; py = 1;
+
+        // Enemigos (solo en suelos)
         for(var i=0; i<5; i++) {
             ex[i] = Math.floor(Math.random()*7)+2;
             ey[i] = Math.floor(Math.random()*5)+2;
@@ -48,21 +53,26 @@
     }
 
     function render() {
-        ctx.fillStyle = "#000";
-        ctx.fillRect(0, 0, 160, 128);
+        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, 160, 128);
 
         if (st == 0) {
-            ui.innerHTML = "CAVE: HARDCORE";
-            ctx.fillStyle = "#f00";
-            ctx.fillText("5 PARA SUFRIR", 40, 60);
-        } else {
-            ui.innerHTML = "HP:" + hp + " | NIV:" + level + " | $:" + coins;
+            ui.innerHTML = "ZELDA HARDCORE";
+            ctx.fillStyle = "#f00"; ctx.fillText("PULSA 5 PARA EMPEZAR", 25, 60);
+        } 
+        else if (st == 4) {
+            ui.innerHTML = "TIENDA | $" + coins;
+            var items = ["+1 VIDA ($3)", "SKIN AZUL ($5)", "SKIN ORO ($10)"];
+            for(var i=0; i<3; i++) {
+                ctx.fillStyle = (shopSel == i) ? "#ff0" : "#888";
+                ctx.fillText((shopSel == i ? "> " : "  ") + items[i], 20, 40 + (i*25));
+            }
+        }
+        else if (st == 2) {
+            ui.innerHTML = "HP:" + hp + " | L:" + level + " | $:" + coins;
             for(var y=0; y<8; y++) {
                 for(var x=0; x<10; x++) {
-                    // --- NIEBLA DE GUERRA ---
                     var dist = Math.sqrt(Math.pow(x-px,2) + Math.pow(y-py,2));
                     if(dist > 2.5) continue; 
-
                     if(map[y][x] == 1) { ctx.fillStyle = "#333"; ctx.fillRect(x*16, y*16, 15, 15); }
                     if(map[y][x] == 6) { ctx.fillStyle = "#f40"; ctx.fillRect(x*16, y*16, 15, 15); }
                     if(map[y][x] == 4) { ctx.fillStyle = "#fd0"; ctx.fillRect(x*16, y*16, 15, 15); }
@@ -75,24 +85,34 @@
                     if(edist <= 2.5) ctx.fillRect(ex[i]*16+4, ey[i]*16+4, 8, 8); 
                 }
             }
+            if(slash > 0) { ctx.fillStyle = "#fff"; ctx.fillRect(px*16-16, py*16-16, 48, 48); slash--; }
+            ctx.fillStyle = skinCol; ctx.fillRect(px*16+2, py*16+2, 12, 12);
         }
-        if(slash > 0) { ctx.fillStyle = "white"; ctx.fillRect(px*16-16, py*16-16, 48, 48); slash--; }
-        ctx.fillStyle = skinCol;
-        ctx.fillRect(px*16+2, py*16+2, 12, 12);
     }
 
     window.onkeydown = function(e) {
         var k = e.keyCode || e.which;
         if(st == 0 && k == 53) { st = 2; initExplore(); }
+        else if(st == 4) {
+            if(k == 48) st = 2;
+            if(k == 50) shopSel = (shopSel > 0) ? shopSel - 1 : 0;
+            if(k == 56) shopSel = (shopSel < 2) ? shopSel + 1 : 2;
+            if(k == 53) {
+                if(shopSel == 0 && coins >= 3) { hp++; coins -= 3; }
+                if(shopSel == 1 && coins >= 5) { skinCol = "#08f"; coins -= 5; }
+                if(shopSel == 2 && coins >= 10) { skinCol = "#fd0"; coins -= 10; }
+            }
+        }
         else if(st == 2) {
+            if(k == 48) { st = 4; shopSel = 0; }
             var nx = px; var ny = py;
             if(k == 50) ny--; if(k == 56) ny++; if(k == 52) nx--; if(k == 54) nx++;
 
-            // Mover enemigos (Dificultad extra)
+            // Movimiento de enemigos
             for(var i=0; i<5; i++) {
-                if(eLive[i] && Math.random() > 0.5) {
-                    ex[i] += (Math.random() > 0.5 ? 1 : -1);
-                    if(map[ey[i]][ex[i]] != 0) ex[i] = px; // Teleport sorpresa
+                if(eLive[i] && Math.random() > 0.7) {
+                    var dx = (Math.random() > 0.5 ? 1 : -1);
+                    if(map[ey[i]][ex[i]+dx] == 0) ex[i] += dx;
                 }
             }
 
@@ -105,15 +125,14 @@
 
             if(nx>=0 && nx<10 && ny>=0 && ny<8) {
                 var t = map[ny][nx];
-                if(t == 0 || t == 4 || t == 6) { 
+                if(t != 1) { 
                     px = nx; py = ny; 
-                    if(t == 6) { hp--; if(hp<=0) { alert("LAVA!"); location.reload(); } }
+                    if(t == 6) { hp--; if(hp<=0) { alert("¡QUEMADO!"); location.reload(); } }
                     if(t == 4) initExplore();
                 }
             }
-            // Colisión con enemigos tras moverte
             for(var i=0; i<5; i++) {
-                if(eLive[i] && ex[i] == px && ey[i] == py) { hp--; if(hp<=0) { alert("MORISTE"); location.reload(); } }
+                if(eLive[i] && ex[i] == px && ey[i] == py) { hp--; if(hp<=0) { alert("MUERTO"); location.reload(); } }
             }
         }
         render();
