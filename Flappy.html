@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FlappyEasy</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: monospace; overflow: hidden; text-align: center; }
+        canvas { display: block; margin: 0 auto; background: #70c5ce; border: 2px solid #333; }
+        #s { font-size: 16px; color: #fff; margin-top: 5px; }
+    </style>
+</head>
+<body>
+    <div id="s">SCORE: 0</div>
+    <canvas id="c"></canvas>
+    <div style="font-size: 10px;">Pulsa [5] para volar (Versión Fácil)</div>
+
+<script>
+    var canvas = document.getElementById('c');
+    var ctx = canvas.getContext('2d');
+    canvas.width = 160;
+    canvas.height = 200;
+
+    var score = 0;
+    var bird = { x: 30, y: 100, w: 12, h: 12, v: 0, 
+                 g: 0.15, // --- MÁS FÁCIL: Menos gravedad ---
+                 jump: -3.5 // --- MÁS FÁCIL: Salto más suave ---
+               };
+    var pipes = [];
+    var gap = 75; // --- MÁS FÁCIL: Hueco mucho más grande ---
+    var pipeSpeed = 1.2; // --- MÁS FÁCIL: Tuberías más lentas ---
+    var gameActive = true;
+
+    function createPipe() {
+        // Ajuste para que el hueco no salga demasiado arriba o abajo
+        var h = Math.floor(Math.random() * (canvas.height - gap - 60)) + 30;
+        pipes.push({ x: canvas.width, y: h });
+    }
+
+    function loop() {
+        if (!gameActive) return;
+
+        ctx.fillStyle = "#70c5ce"; // Cielo
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Física del pájaro
+        bird.v += bird.g;
+        bird.y += bird.v;
+
+        // Dibujar pájaro
+        ctx.fillStyle = "#ff0";
+        ctx.fillRect(bird.x, bird.y, bird.w, bird.h);
+
+        // Tuberías
+        for (var i = pipes.length - 1; i >= 0; i--) {
+            var p = pipes[i];
+            p.x -= pipeSpeed; // Usamos la nueva velocidad lenta
+
+            ctx.fillStyle = "#2ecc71"; // Verde tubería
+            // Tubería superior
+            ctx.fillRect(p.x, 0, 25, p.y);
+            // Tubería inferior
+            ctx.fillRect(p.x, p.y + gap, 25, canvas.height);
+
+            // Colisiones
+            if (bird.x < p.x + 25 && bird.x + bird.w > p.x &&
+                (bird.y < p.y || bird.y + bird.h > p.y + gap)) {
+                gameOver();
+            }
+
+            // Puntuación (ajustado para la nueva velocidad)
+            if (p.x < bird.x && !p.scored) {
+                p.scored = true;
+                score++;
+                document.getElementById('s').innerText = "SCORE: " + score;
+            }
+
+            if (p.x < -30) pipes.splice(i, 1);
+        }
+
+        // Colisión con suelo o techo
+        if (bird.y > canvas.height || bird.y < -10) gameOver();
+
+        // Generar nuevas tuberías (más espaciadas para que sea fácil)
+        if (pipes.length === 0 || pipes[pipes.length - 1].x < 80) createPipe();
+
+        setTimeout(function() { requestAnimationFrame(loop); }, 25); // Un pelín más lento el refresco
+    }
+
+    function gameOver() {
+        gameActive = false;
+        alert("GAME OVER! Score: " + score);
+        location.reload();
+    }
+
+    window.onkeydown = function(e) {
+        var k = e.keyCode || e.which;
+        // Tecla 5, Enter o Espacio
+        if (k == 53 || k == 13 || k == 32) {
+            bird.v = bird.jump;
+        }
+    };
+
+    loop();
+</script>
+</body>
+</html>
