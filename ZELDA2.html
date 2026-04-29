@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { margin: 0; background: #000; color: #f00; font-family: monospace; overflow: hidden; text-align: center; }
+        canvas { border: 1px solid #f00; background: #000; margin-top: 2px; }
+        #u { font-size: 10px; background: #100; border-bottom: 1px solid #f00; }
+    </style>
+</head>
+<body>
+    <div id="u">MODO HARDCORE</div>
+    <canvas id="g" width="160" height="128"></canvas>
+    <div style="font-size:8px;">5:Atacar | 0:Tienda | ¡CUIDADO CON LA LAVA!</div>
+
+<script>
+    var canvas = document.getElementById('g');
+    var ctx = canvas.getContext('2d');
+    var ui = document.getElementById('u');
+
+    var st = 0; var level = 0; var coins = 0; var hp = 5; var skinCol = "#0f0";
+    var px = 1; var py = 1; var slash = 0;
+    var map = [];
+    var ex = [0,0,0,0,0]; var ey = [0,0,0,0,0]; var eLive = [0,0,0,0,0];
+
+    function initExplore() {
+        level++;
+        map = [];
+        for(var y=0; y<8; y++) {
+            map[y] = [];
+            for(var x=0; x<10; x++) {
+                if(x==0 || x==9 || y==0 || y==7) map[y][x] = 1;
+                else {
+                    var r = Math.random();
+                    if(r < 0.15) map[y][x] = 1; // Pared
+                    else if(r < 0.25) map[y][x] = 6; // LAVA (Muerte)
+                    else map[y][x] = 0;
+                }
+            }
+        }
+        map[1][1] = 0; map[6][8] = 4; // Salida
+        px = 1; py = 1;
+        for(var i=0; i<5; i++) {
+            ex[i] = Math.floor(Math.random()*7)+2;
+            ey[i] = Math.floor(Math.random()*5)+2;
+            eLive[i] = (map[ey[i]][ex[i]] == 0) ? 1 : 0;
+        }
+    }
+
+    function render() {
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, 160, 128);
+
+        if (st == 0) {
+            ui.innerHTML = "CAVE: HARDCORE";
+            ctx.fillStyle = "#f00";
+            ctx.fillText("5 PARA SUFRIR", 40, 60);
+        } else {
+            ui.innerHTML = "HP:" + hp + " | NIV:" + level + " | $:" + coins;
+            for(var y=0; y<8; y++) {
+                for(var x=0; x<10; x++) {
+                    // --- NIEBLA DE GUERRA ---
+                    var dist = Math.sqrt(Math.pow(x-px,2) + Math.pow(y-py,2));
+                    if(dist > 2.5) continue; 
+
+                    if(map[y][x] == 1) { ctx.fillStyle = "#333"; ctx.fillRect(x*16, y*16, 15, 15); }
+                    if(map[y][x] == 6) { ctx.fillStyle = "#f40"; ctx.fillRect(x*16, y*16, 15, 15); }
+                    if(map[y][x] == 4) { ctx.fillStyle = "#fd0"; ctx.fillRect(x*16, y*16, 15, 15); }
+                }
+            }
+            ctx.fillStyle = "#f00";
+            for(var i=0; i<5; i++) { 
+                if(eLive[i]) {
+                    var edist = Math.sqrt(Math.pow(ex[i]-px,2) + Math.pow(ey[i]-py,2));
+                    if(edist <= 2.5) ctx.fillRect(ex[i]*16+4, ey[i]*16+4, 8, 8); 
+                }
+            }
+        }
+        if(slash > 0) { ctx.fillStyle = "white"; ctx.fillRect(px*16-16, py*16-16, 48, 48); slash--; }
+        ctx.fillStyle = skinCol;
+        ctx.fillRect(px*16+2, py*16+2, 12, 12);
+    }
+
+    window.onkeydown = function(e) {
+        var k = e.keyCode || e.which;
+        if(st == 0 && k == 53) { st = 2; initExplore(); }
+        else if(st == 2) {
+            var nx = px; var ny = py;
+            if(k == 50) ny--; if(k == 56) ny++; if(k == 52) nx--; if(k == 54) nx++;
+
+            // Mover enemigos (Dificultad extra)
+            for(var i=0; i<5; i++) {
+                if(eLive[i] && Math.random() > 0.5) {
+                    ex[i] += (Math.random() > 0.5 ? 1 : -1);
+                    if(map[ey[i]][ex[i]] != 0) ex[i] = px; // Teleport sorpresa
+                }
+            }
+
+            if(k == 53) {
+                slash = 2;
+                for(var i=0; i<5; i++) {
+                    if(eLive[i] && Math.abs(ex[i]-px) <= 1 && Math.abs(ey[i]-py) <= 1) { eLive[i] = 0; coins++; }
+                }
+            }
+
+            if(nx>=0 && nx<10 && ny>=0 && ny<8) {
+                var t = map[ny][nx];
+                if(t == 0 || t == 4 || t == 6) { 
+                    px = nx; py = ny; 
+                    if(t == 6) { hp--; if(hp<=0) { alert("LAVA!"); location.reload(); } }
+                    if(t == 4) initExplore();
+                }
+            }
+            // Colisión con enemigos tras moverte
+            for(var i=0; i<5; i++) {
+                if(eLive[i] && ex[i] == px && ey[i] == py) { hp--; if(hp<=0) { alert("MORISTE"); location.reload(); } }
+            }
+        }
+        render();
+    };
+    render();
+</script>
+</body>
+</html>
