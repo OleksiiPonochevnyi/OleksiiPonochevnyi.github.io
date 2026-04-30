@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nokia Hardcore Racer</title>
+    <style>
+        body { background: #000; color: #f00; font-family: monospace; text-align: center; margin: 0; overflow: hidden; }
+        #game-box { 
+            position: relative; width: 150px; height: 220px; 
+            background: #111; margin: 10px auto; border: 3px solid #f00; 
+            overflow: hidden;
+        }
+        .lane { 
+            position: absolute; width: 50px; height: 100%; 
+            border-right: 1px solid #333; box-sizing: border-box; 
+        }
+        #car { 
+            position: absolute; bottom: 10px; width: 50px; 
+            font-size: 28px; z-index: 10;
+        }
+        .obs { 
+            position: absolute; width: 50px; font-size: 24px; 
+            top: -50px; z-index: 5;
+        }
+        #ui { font-weight: bold; margin: 5px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">LVL: <span id="lvl">1</span> | PTOS: <span id="score">0</span></div>
+    
+    <div id="game-box">
+        <div class="lane" style="left:0"></div>
+        <div class="lane" style="left:50px"></div>
+        <div class="lane" style="left:100px"></div>
+        
+        <div id="car" style="left:50px">🏎️</div>
+        <!-- Dos enemigos para cerrar caminos -->
+        <div id="obs1" class="obs" style="left:0px">🚔</div>
+        <div id="obs2" class="obs" style="left:100px">🚧</div>
+    </div>
+
+    <script>
+        var car = document.getElementById('car');
+        var o1 = document.getElementById('obs1');
+        var o2 = document.getElementById('obs2');
+        
+        var lane = 1;
+        var score = 0;
+        var speed = 7; // Más rápido desde el inicio
+        var vivo = true;
+
+        // Posiciones de los obstáculos
+        var obs = [
+            { el: o1, y: -50, l: 0 },
+            { el: o2, y: -150, l: 2 }
+        ];
+
+        window.onkeydown = function(e) {
+            if (!vivo) return;
+            var k = e.keyCode;
+            if (k == 52 || k == 37) { if(lane > 0) lane--; }
+            if (k == 54 || k == 39) { if(lane < 2) lane++; }
+            car.style.left = (lane * 50) + "px";
+        };
+
+        function loop() {
+            if (!vivo) return;
+
+            for (var i = 0; i < obs.length; i++) {
+                var o = obs[i];
+                o.y += speed;
+
+                if (o.y > 220) {
+                    o.y = -60;
+                    // Lógica para que no bloqueen los 3 carriles a la vez
+                    var nuevaL = Math.floor(Math.random() * 3);
+                    if (i == 1 && nuevaL == obs[0].l) nuevaL = (nuevaL + 1) % 3;
+                    o.l = nuevaL;
+                    o.el.style.left = (o.l * 50) + "px";
+                    
+                    score++;
+                    document.getElementById('score').innerHTML = score;
+                    if(score % 5 == 0) {
+                        speed += 0.8;
+                        document.getElementById('lvl').innerHTML = Math.floor(speed/2);
+                    }
+                }
+                o.el.style.top = o.y + "px";
+
+                // COLISIÓN DOBLE
+                if (o.y > 160 && o.y < 200 && lane == o.l) {
+                    vivo = false;
+                    car.innerHTML = "💥";
+                    setTimeout(function(){ 
+                        alert("FAILED. Score: " + score); 
+                        location.reload(); 
+                    }, 10);
+                }
+            }
+
+            setTimeout(loop, 40); // 40ms = más FPS, más velocidad real
+        }
+
+        loop();
+    </script>
+</body>
+</html>
