@@ -2,52 +2,55 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nokia Mini Racer</title>
+    /* Forzamos al navegador a no hacer zoom */
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, target-densitydpi=device-dpi">
+    <title>Nokia Racer ASCII</title>
     <style>
-        /* Forzamos que la página no se estire */
+        * { touch-action: manipulation; }
         body { 
             background: #000; color: #0f0; font-family: monospace; 
-            margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100vh;
+            margin: 0; padding: 0; overflow: hidden;
+            width: 100%; height: 100%; position: fixed; /* Evita el scroll y zoom */
         }
-        #ui { font-size: 10px; padding: 2px; background: #111; }
+        #ui { font-size: 12px; background: #111; text-align: center; height: 20px; }
         
-        /* Caja del juego tamaño mini para Nokia */
         #game-box { 
             position: relative; 
-            width: 120px; /* Tamaño reducido para el ancho del Nokia */
+            width: 120px; 
             height: 160px; 
-            background: #222; 
+            background: #000; 
             margin: 0 auto; 
-            border: 1px solid #444; 
+            border: 2px solid #0f0; 
             overflow: hidden;
         }
         .lane { 
             position: absolute; width: 40px; height: 100%; 
-            border-right: 1px dashed #333; box-sizing: border-box; 
+            border-right: 1px dashed #222; box-sizing: border-box; 
         }
+        /* Coche con letras */
         #car { 
-            position: absolute; bottom: 5px; width: 40px; 
-            font-size: 20px; text-align: center; z-index: 10;
+            position: absolute; bottom: 10px; width: 40px; 
+            font-weight: bold; font-size: 18px; text-align: center; z-index: 10;
         }
+        /* Obstáculo con letras */
         .obs { 
-            position: absolute; width: 40px; font-size: 18px; 
-            text-align: center; top: -30px; z-index: 5;
+            position: absolute; width: 40px; font-size: 16px; 
+            font-weight: bold; text-align: center; top: -30px; z-index: 5;
         }
     </style>
 </head>
 <body>
 
-    <div id="ui">PTS:<span id="score">0</span> L:<span id="lvl">1</span></div>
+    <div id="ui">PTS:<span id="score">0</span></div>
     
     <div id="game-box">
         <div class="lane" style="left:0"></div>
         <div class="lane" style="left:40px"></div>
         <div class="lane" style="left:80px"></div>
         
-        <div id="car" style="left:40px">🏎️</div>
-        <div id="obs1" class="obs" style="left:0px">🚔</div>
-        <div id="obs2" class="obs" style="left:80px">🚧</div>
+        <div id="car" style="left:40px">^A^</div>
+        <div id="obs1" class="obs" style="left:0px">X-X</div>
+        <div id="obs2" class="obs" style="left:80px">X-X</div>
     </div>
 
     <script>
@@ -64,13 +67,15 @@
             { el: o2, y: -120, l: 2 }
         ];
 
+        // Mapeo de teclas 4 y 6
         window.onkeydown = function(e) {
             if (!vivo) return;
             var k = e.keyCode;
-            // 52 = Tecla 4, 54 = Tecla 6
             if (k == 52 || k == 37) { if(lane > 0) lane--; }
             if (k == 54 || k == 39) { if(lane < 2) lane++; }
             car.style.left = (lane * 40) + "px";
+            // Prevenir que la tecla mueva la pantalla
+            e.preventDefault();
         };
 
         function loop() {
@@ -92,10 +97,10 @@
                 }
                 o.el.style.top = o.y + "px";
 
-                if (o.y > 115 && o.y < 150 && lane == o.l) {
+                if (o.y > 110 && o.y < 145 && lane == o.l) {
                     vivo = false;
-                    car.innerHTML = "💥";
-                    alert("FIN! Puntos: " + score);
+                    car.innerHTML = "*#*";
+                    alert("GAME OVER! Ptos: " + score);
                     location.reload();
                 }
             }
