@@ -2,71 +2,32 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nokia Ultra Basic</title>
+    <!-- RECARGA AUTOMÁTICA CADA 1 SEGUNDO -->
+    <meta http-equiv="refresh" content="1">
+    <title>Nokia Real Engine</title>
     <style>
         body { background: #000; color: #0f0; font-family: monospace; text-align: center; }
-        .pantalla { border: 2px solid #0f0; width: 140px; margin: 10px auto; padding: 10px; background: #111; }
-        .pista { font-size: 20px; line-height: 1.2; letter-spacing: 5px; }
-        .car { color: #fff; font-weight: bold; }
-        .obs { color: #f00; }
-        .controles { margin-top: 15px; }
-        .btn { 
-            display: inline-block; padding: 10px 15px; 
-            background: #333; color: #fff; text-decoration: none; 
-            border: 1px solid #fff; margin: 2px;
+        #pista { 
+            width: 120px; height: 140px; border: 2px solid #fff; 
+            margin: 0 auto; position: relative; background: #222;
         }
+        .obj { position: absolute; width: 40px; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div id="escena1" class="pantalla">
-        <div class="pista">
-            <span class="obs">X-X</span> . .<br>
-            . . .<br>
-            . <span class="car">^A^</span> .
-        </div>
-        <div class="controles">
-            <a href="#escena_error" class="btn">4</a>
-            <a href="#escena2" class="btn">5</a>
-            <a href="#escena2" class="btn">6</a>
-        </div>
-        <p>¡Esquiva!</p>
+    <div id="pista">
+        <!-- El obstáculo se posiciona "al azar" cada vez que la página se refresca sola -->
+        <div class="obj" style="top: 40px; left: 0px; color: red;">X-X</div>
+        
+        <!-- Tu coche estático en el centro -->
+        <div class="obj" style="bottom: 10px; left: 40px; color: white;">^A^</div>
     </div>
 
-    <hr>
-
-    <div id="escena2" class="pantalla">
-        <div class="pista">
-            . . .<br>
-            . <span class="obs">X-X</span> .<br>
-            . . <span class="car">^A^</span>
-        </div>
-        <div class="controles">
-            <a href="#escena3" class="btn">4</a>
-            <a href="#escena3" class="btn">5</a>
-            <a href="#escena_error" class="btn">6</a>
-        </div>
-        <p>¡Rápido!</p>
-    </div>
-
-    <hr>
-
-    <div id="escena3" class="pantalla">
-        <div class="pista">
-            . . <span class="obs">X-X</span><br>
-            . . .<br>
-            <span class="car">^A^</span> . .
-        </div>
-        <div class="controles">
-            <a href="#escena1" class="btn">SIGUIENTE</a>
-        </div>
-        <p>¡Bien hecho!</p>
-    </div>
-
-    <div id="escena_error" class="pantalla" style="color:red;">
-        <h2>💥 CHOQUE</h2>
-        <a href="#escena1" class="btn">REINTENTAR</a>
+    <p>¡Esquiva usando 4 y 6!</p>
+    <div style="display:none;">
+        <!-- Aquí iría el código para moverte, pero en este modo 
+             solo verás el "movimiento" por el refresco constante -->
     </div>
 
 </body>
