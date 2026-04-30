@@ -4,69 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { background: #000; color: #0f0; font-family: monospace; margin: 0; overflow: hidden; }
-        #game { position: relative; width: 120px; height: 150px; border: 1px solid #0f0; margin: 5px auto; overflow: hidden; }
-        .car { position: absolute; width: 40px; text-align: center; font-weight: bold; }
+        body { background: #000; color: #0f0; font-family: monospace; text-align: center; margin: 0; }
+        #game { 
+            position: relative; width: 120px; height: 120px; 
+            border: 2px solid #0f0; margin: 10px auto; overflow: hidden; background: #111;
+        }
+        .car { position: absolute; width: 40px; font-weight: bold; }
         #player { bottom: 5px; color: #fff; }
-        .obs { top: -20px; color: #f00; }
+        #obs { top: 0px; color: #f00; }
+        .btn { padding: 10px; background: #333; color: #fff; border: 1px solid #555; }
     </style>
 </head>
-<body onclick=""> <!-- El onclick vacío ayuda a despertar al JS en móviles viejos -->
+<body>
 
-    <div style="font-size:10px; text-align:center;">PTS:<span id="s">0</span></div>
+    <div style="font-size:12px;">PUNTOS: <span id="s">0</span></div>
     
     <div id="game">
+        <div id="obs" class="car" style="left:0px; top:0px;">X-X</div>
         <div id="player" class="car" style="left:40px;">^A^</div>
-        <div id="o1" class="car obs" style="left:0px;">X-X</div>
     </div>
 
-    <div style="text-align:center; margin-top:5px;">
-        <button onclick="m(0)">4</button>
-        <button onclick="m(1)">5</button>
-        <button onclick="m(2)">6</button>
+    <div style="margin-top:10px;">
+        <button class="btn" onclick="m(0)">4</button>
+        <button class="btn" onclick="m(1)">5</button>
+        <button class="btn" onclick="m(2)">6</button>
     </div>
 
     <script>
         var p = document.getElementById('player');
-        var o1 = document.getElementById('o1');
-        var px = 1; var ox = 0; var oy = -20; var sc = 0; var v = true;
+        var o = document.getElementById('obs');
+        var px = 1; var ox = 0; var oy = 0; var sc = 0;
 
-        // Función de movimiento simple
         function m(n) {
+            // Mover jugador
             px = n;
             p.style.left = (px * 40) + "px";
-        }
 
-        // Teclado físico
-        window.onkeydown = function(e) {
-            if(e.keyCode == 52) m(0);
-            if(e.keyCode == 53) m(1);
-            if(e.keyCode == 54) m(2);
-        };
-
-        function tick() {
-            if(!v) return;
-            
-            oy += 8; // Velocidad fija para evitar cálculos pesados
-            if(oy > 150) {
-                oy = -30;
+            // El obstáculo baja SOLO cuando tú te mueves (paso a paso)
+            oy += 20; 
+            if(oy > 100) {
+                oy = 0;
                 ox = Math.floor(Math.random() * 3);
-                o1.style.left = (ox * 40) + "px";
+                o.style.left = (ox * 40) + "px";
                 sc++;
                 document.getElementById('s').innerHTML = sc;
             }
-            o1.style.top = oy + "px";
+            o.style.top = oy + "px";
 
-            // Colisión simplificada
-            if(oy > 110 && oy < 140 && px == ox) {
-                v = false;
-                alert("FIN. PTS: " + sc);
+            // Colisión
+            if(oy >= 80 && px == ox) {
+                alert("CHOQUE! Puntos: " + sc);
                 location.reload();
             }
-            setTimeout(tick, 100); // Pausa más larga (10fps) para que el Nokia respire
         }
 
-        tick();
+        // Mapeo de teclado físico
+        window.onkeydown = function(e) {
+            if(e.keyCode == 52) m(0); // Tecla 4
+            if(e.keyCode == 53) m(1); // Tecla 5
+            if(e.keyCode == 54) m(2); // Tecla 6
+        };
     </script>
 </body>
 </html>
