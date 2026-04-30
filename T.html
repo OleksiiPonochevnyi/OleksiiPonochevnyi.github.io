@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZOMBIE SURVIVAL</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: monospace; padding: 10px; }
+        .stats { border-bottom: 1px solid #0f0; margin-bottom: 10px; padding-bottom: 5px; font-size: 12px; }
+        .log { height: 100px; overflow: hidden; margin-bottom: 10px; font-size: 14px; }
+        .btn { 
+            display: block; background: #222; color: #fff; 
+            padding: 12px; margin: 5px 0; text-decoration: none; 
+            border: 1px solid #0f0; text-align: center; font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stats">
+        ❤️ HP: <span id="hp">100</span> | 🍖 COMIDA: <span id="food">5</span>
+    </div>
+
+    <div class="log" id="log">
+        Te despiertas en una ciudad abandonada. Hay ruidos en el callejón. ¿Qué haces?
+    </div>
+
+    <div id="controles">
+        <button class="btn" onclick="jugar('explorar')">1. Explorar (4)</button>
+        <button class="btn" onclick="jugar('comer')">2. Comer (5)</button>
+        <button class="btn" onclick="jugar('dormir')">3. Dormir (6)</button>
+    </div>
+
+    <script>
+        var hp = 100;
+        var food = 5;
+        var dias = 0;
+
+        function actualizar() {
+            document.getElementById('hp').innerText = hp;
+            document.getElementById('food').innerText = food;
+            if (hp <= 0) {
+                document.getElementById('log').innerHTML = "HAS MUERTO. Sobreviviste " + dias + " días.";
+                document.getElementById('controles').innerHTML = '<button class="btn" onclick="location.reload()">REINTENTAR</button>';
+            }
+        }
+
+        function escribir(texto) {
+            document.getElementById('log').innerHTML = texto;
+        }
+
+        function jugar(accion) {
+            if (hp <= 0) return;
+            dias++;
+
+            if (accion == 'explorar') {
+                var suerte = Math.random();
+                if (suerte > 0.5) {
+                    food += 2;
+                    escribir("¡Encontraste latas de comida! +2 raciones.");
+                } else {
+                    hp -= 20;
+                    escribir("¡Un zombie te mordió! Pierdes 20 HP.");
+                }
+            }
+
+            if (accion == 'comer') {
+                if (food > 0) {
+                    food--;
+                    hp = Math.min(100, hp + 30);
+                    escribir("Comes algo. Te sientes mejor. +30 HP.");
+                } else {
+                    escribir("No tienes comida. Te debilitas.");
+                    hp -= 10;
+                }
+            }
+
+            if (accion == 'dormir') {
+                hp += 5;
+                food--;
+                escribir("Descansas un poco, pero despiertas con hambre.");
+            }
+
+            actualizar();
+        }
+
+        // Teclado físico del Nokia
+        window.onkeydown = function(e) {
+            if (e.keyCode == 52) jugar('explorar');
+            if (e.keyCode == 53) jugar('comer');
+            if (e.keyCode == 54) jugar('dormir');
+        };
+    </script>
+</body>
+</html>
