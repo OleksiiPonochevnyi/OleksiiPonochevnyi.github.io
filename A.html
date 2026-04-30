@@ -2,111 +2,71 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    /* Forzamos al navegador a no hacer zoom */
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, target-densitydpi=device-dpi">
-    <title>Nokia Racer ASCII</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        * { touch-action: manipulation; }
-        body { 
-            background: #000; color: #0f0; font-family: monospace; 
-            margin: 0; padding: 0; overflow: hidden;
-            width: 100%; height: 100%; position: fixed; /* Evita el scroll y zoom */
-        }
-        #ui { font-size: 12px; background: #111; text-align: center; height: 20px; }
-        
-        #game-box { 
-            position: relative; 
-            width: 120px; 
-            height: 160px; 
-            background: #000; 
-            margin: 0 auto; 
-            border: 2px solid #0f0; 
-            overflow: hidden;
-        }
-        .lane { 
-            position: absolute; width: 40px; height: 100%; 
-            border-right: 1px dashed #222; box-sizing: border-box; 
-        }
-        /* Coche con letras */
-        #car { 
-            position: absolute; bottom: 10px; width: 40px; 
-            font-weight: bold; font-size: 18px; text-align: center; z-index: 10;
-        }
-        /* Obstáculo con letras */
-        .obs { 
-            position: absolute; width: 40px; font-size: 16px; 
-            font-weight: bold; text-align: center; top: -30px; z-index: 5;
-        }
+        body { background: #000; color: #0f0; font-family: monospace; margin: 0; overflow: hidden; }
+        #game { position: relative; width: 120px; height: 150px; border: 1px solid #0f0; margin: 5px auto; overflow: hidden; }
+        .car { position: absolute; width: 40px; text-align: center; font-weight: bold; }
+        #player { bottom: 5px; color: #fff; }
+        .obs { top: -20px; color: #f00; }
     </style>
 </head>
-<body>
+<body onclick=""> <!-- El onclick vacío ayuda a despertar al JS en móviles viejos -->
 
-    <div id="ui">PTS:<span id="score">0</span></div>
+    <div style="font-size:10px; text-align:center;">PTS:<span id="s">0</span></div>
     
-    <div id="game-box">
-        <div class="lane" style="left:0"></div>
-        <div class="lane" style="left:40px"></div>
-        <div class="lane" style="left:80px"></div>
-        
-        <div id="car" style="left:40px">^A^</div>
-        <div id="obs1" class="obs" style="left:0px">X-X</div>
-        <div id="obs2" class="obs" style="left:80px">X-X</div>
+    <div id="game">
+        <div id="player" class="car" style="left:40px;">^A^</div>
+        <div id="o1" class="car obs" style="left:0px;">X-X</div>
+    </div>
+
+    <div style="text-align:center; margin-top:5px;">
+        <button onclick="m(0)">4</button>
+        <button onclick="m(1)">5</button>
+        <button onclick="m(2)">6</button>
     </div>
 
     <script>
-        var car = document.getElementById('car');
-        var o1 = document.getElementById('obs1');
-        var o2 = document.getElementById('obs2');
-        var lane = 1;
-        var score = 0;
-        var speed = 6;
-        var vivo = true;
+        var p = document.getElementById('player');
+        var o1 = document.getElementById('o1');
+        var px = 1; var ox = 0; var oy = -20; var sc = 0; var v = true;
 
-        var obs = [
-            { el: o1, y: -40, l: 0 },
-            { el: o2, y: -120, l: 2 }
-        ];
+        // Función de movimiento simple
+        function m(n) {
+            px = n;
+            p.style.left = (px * 40) + "px";
+        }
 
-        // Mapeo de teclas 4 y 6
+        // Teclado físico
         window.onkeydown = function(e) {
-            if (!vivo) return;
-            var k = e.keyCode;
-            if (k == 52 || k == 37) { if(lane > 0) lane--; }
-            if (k == 54 || k == 39) { if(lane < 2) lane++; }
-            car.style.left = (lane * 40) + "px";
-            // Prevenir que la tecla mueva la pantalla
-            e.preventDefault();
+            if(e.keyCode == 52) m(0);
+            if(e.keyCode == 53) m(1);
+            if(e.keyCode == 54) m(2);
         };
 
-        function loop() {
-            if (!vivo) return;
-
-            for (var i = 0; i < obs.length; i++) {
-                var o = obs[i];
-                o.y += speed;
-
-                if (o.y > 160) {
-                    o.y = -50;
-                    var nuevaL = Math.floor(Math.random() * 3);
-                    if (i == 1 && nuevaL == obs[0].l) nuevaL = (nuevaL + 1) % 3;
-                    o.l = nuevaL;
-                    o.el.style.left = (o.l * 40) + "px";
-                    score++;
-                    document.getElementById('score').innerHTML = score;
-                    if(score % 5 == 0) speed += 0.5;
-                }
-                o.el.style.top = o.y + "px";
-
-                if (o.y > 110 && o.y < 145 && lane == o.l) {
-                    vivo = false;
-                    car.innerHTML = "*#*";
-                    alert("GAME OVER! Ptos: " + score);
-                    location.reload();
-                }
+        function tick() {
+            if(!v) return;
+            
+            oy += 8; // Velocidad fija para evitar cálculos pesados
+            if(oy > 150) {
+                oy = -30;
+                ox = Math.floor(Math.random() * 3);
+                o1.style.left = (ox * 40) + "px";
+                sc++;
+                document.getElementById('s').innerHTML = sc;
             }
-            setTimeout(loop, 50);
+            o1.style.top = oy + "px";
+
+            // Colisión simplificada
+            if(oy > 110 && oy < 140 && px == ox) {
+                v = false;
+                alert("FIN. PTS: " + sc);
+                location.reload();
+            }
+            setTimeout(tick, 100); // Pausa más larga (10fps) para que el Nokia respire
         }
-        loop();
+
+        tick();
     </script>
 </body>
 </html>
