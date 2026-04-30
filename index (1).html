@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=240, height=320, user-scalable=no">
+    <style>
+        * { margin: 0; padding: 0; overflow: hidden; box-sizing: border-box; }
+        body { background: #000; width: 240px; height: 320px; font-family: monospace; color: #fff; }
+        #viewport { position: relative; width: 240px; height: 320px; }
+        
+        /* Juego 3D */
+        .px { position: absolute; width: 10px; height: 13.4px; }
+        #gun { position: absolute; bottom: 0; left: 85px; width: 70px; height: 50px; background: #666; z-index: 50; border: 3px solid #222; }
+        #hud { position: absolute; top: 0; width: 100%; background: rgba(0,0,0,0.8); color: #0f0; font-size: 10px; z-index: 60; padding: 2px; text-align: center; border-bottom: 1px solid #444; }
+        
+        /* Sprites */
+        .en { position: absolute; background: #00f; border: 1px solid #f00; z-index: 10; }
+        .wpn { position: absolute; background: #f80; border: 1px dashed #fff; z-index: 9; }
+        .ammo { position: absolute; background: #0f0; border: 1px dotted #000; z-index: 8; }
+        
+        /* Editor - Ajustado para mapa gigante */
+        #editor_ui { position: absolute; top: 0; left: 0; width: 240px; height: 320px; background: #111; z-index: 100; display: none; padding: 5px; text-align: center; }
+        #ed_text { font-size: 9px; color: #0f0; white-space: pre; line-height: 12px; margin-top: 5px; display: inline-block; text-align: left; }
+        #ed_help { color: #aaa; font-size: 8px; margin-top: 5px; border-top: 1px solid #333; padding-top: 5px; }
+    </style>
+</head>
+<body onload="init()">
+    <div id="viewport">
+        <div id="hud">HP:100 | BLS:10 | PTS:0</div>
+        <div id="game_area"></div>
+        <div id="obj_container"></div>
+        <div id="gun"></div>
+        
+        <div id="editor_ui">
+            <div style="font-size: 10px; color: #fff;">CONSTRUCTOR XL (12x12)</div>
+            <div id="ed_text"></div>
+            <div id="ed_help">
+                2,8,4,6:MOVER | 5:CAMBIAR | 0:JUGAR<br><br>
+                0:Suelo 1:Pared 2:Enemigo 3:Arma 4:Balas
+            </div>
+        </div>
+    </div>
+
+<script>
+    var area = document.getElementById('game_area'), oCont = document.getElementById('obj_container');
+    var gun = document.getElementById('gun'), edUI = document.getElementById('editor_ui'), hud = document.getElementById('hud');
+
+    var R_W = 24, R_H = 18, pixels = [];
+    var px=1.5, py=1.5, dx=1, dy=0, plx=0, ply=0.66;
+    var editMode = false, keys = {};
+    
+    // Stats
+    var hp = 100, ammo = 10, score = 0, respawnTimer = 0;
+    var cx = 5, cy = 5, inputCooldown = 0, shootCooldown = 0;
+
+    // MAPA XL (12x12)
+    var map = [
+        [1,1,1,1,1,1,1,1,1,1,1,1],
+        [1,0,0,0,0,0,0,0,0,0,3,1],
+        [1,0,1,1,0,1,1,0,1,1,0,1],
+        [1,0,1,2,0,0,0,0,2,1,0,1],
+        [1,0,0,0,0,1,1,0,0,0,0,1],
+        [1,0,1,0,0,4,0,0,0,1,0,1],
+        [1,0,1,0,0,0,4,0,0,1,0,1],
+        [1,0,0,0,0,1,1,0,0,0,0,1],
+        [1,0,1,2,0,0,0,0,2,1,0,1],
+        [1,0,1,1,0,1,1,0,1,1,0,1],
+        [1,3,0,0,0,0,0,0,0,0,0,1],
+        [1,1,1,1,1,1,1,1,1,1,1,1]
+    ];
+
+    var enemies = [], items = [];
+
+    function init() {
+        for(var i=0; i<R_W*R_H; i++) {
+            var d = document.createElement('div'); d.className = 'px';
+            d.style.left = (i%R_W * 10) + 'px'; d.style.top = (Math.floor(i/R_W) * 13.4) + 'px';
+            area.appendChild(d); pixels.push(d);
+        }
+        document.onkeydown = function(e){ 
+            var k = e.keyCode || e.which; keys[k] = true;
+            if(k == 48) toggleEditor(); 
+        };
+        document.onkeyup = function(e){ keys[e.keyCode || e.which] = false; };
+        loadWorld();
+        setInterval(gameLoop, 80);
+    }
+
+    function toggleEditor() {
+        editMode = !editMode;
+        if(editMode) { 
+            edUI.style.display = "block";
+            drawEditor(); 
+        } else { 
+            edUI.style.display = "none"; 
+            loadWorld(); 
+        }
+    }
+
+    function loadWorld() {
+        oCont.innerHTML = ""; enemies = []; items = [];
+        px = 1.5; py = 1.5; 
+        hp = 100; ammo = 10; score = 0; respawnTimer = 0;
+        
+        for(var x=0; x<map.length; x++) {
+            for(var y=0; y<map[x].length; y++) {
+                if(map[x][y] == 2) {
+                    var d = document.createElement('div'); d.className = 'en'; oCont.appendChild(d);
+                    enemies.push({x: x+0.5, y: y+0.5, ox: x+0.5, oy: y+0.5, alive: true, div: d});
+                }
+                if(map[x][y] == 3 || map[x][y] == 4) {
+                    var d = document.createElement('div'); d.className = (map[x][y]==3?'wpn':'ammo'); oCont.appendChild(d);
+                    items.push({x: x+0.5, y: y+0.5, type: map[x][y], active: true, div: d});
+                }
+            }
+        }
+    }
+
+    function update() {
+        if(editMode) { updateEditor(); return; }
+        if(hp <= 0) return; 
+
+        var ms = 0.15, rs = 0.2;
+        
+        if(keys[50]){ if(map[Math.floor(px+dx*ms)][Math.floor(py)]==0) px+=dx*ms; if(map[Math.floor(px)][Math.floor(py+dy*ms)]==0) py+=dy*ms; }
+        if(keys[56]){ if(map[Math.floor(px-dx*ms)][Math.floor(py)]==0) px-=dx*ms; if(map[Math.floor(px)][Math.floor(py-dy*ms)]==0) py-=dy*ms; }
+        if(keys[52]){ var odx=dx; dx=dx*Math.cos(-rs)-dy*Math.sin(-rs); dy=odx*Math.sin(-rs)+dy*Math.cos(-rs); var oplx=plx; plx=plx*Math.cos(-rs)-ply*Math.sin(-rs); ply=oplx*Math.sin(-rs)+ply*Math.cos(-rs); }
+        if(keys[54]){ var odx=dx; dx=dx*Math.cos(rs)-dy*Math.sin(rs); dy=odx*Math.sin(rs)+dy*Math.cos(rs); var oplx=plx; plx=plx*Math.cos(rs)-ply*Math.sin(rs); ply=oplx*Math.sin(rs)+ply*Math.cos(rs); }
+
+        respawnTimer++;
+        if(respawnTimer > 180) {
+            enemies.forEach(function(e) { if(!e.alive) { e.alive = true; e.x = e.ox; e.y = e.oy; } });
+            respawnTimer = 0;
+        }
+
+        items.forEach(function(it) {
+            if(it.active && Math.sqrt((px-it.x)**2 + (py-it.y)**2) < 0.5) {
+                it.active = false; it.div.style.display = "none";
+                ammo += (it.type == 3 ? 15 : 10);
+            }
+        });
+
+        enemies.forEach(function(e) {
+            if(!e.alive) return;
+            var dist = Math.sqrt((px-e.x)**2 + (py-e.y)**2);
+            if(dist < 5) { e.x += (px>e.x?0.02:-0.02); e.y += (py>e.y?0.02:-0.02); }
+            if(dist < 0.7) hp -= 2;
+        });
+
+        if(shootCooldown > 0) shootCooldown--;
+        if(keys[53] && ammo > 0 && shootCooldown <= 0) { 
+            ammo--; shootCooldown = 4;
+            gun.style.transform = "scale(1.2)"; setTimeout(function(){gun.style.transform="scale(1)";}, 50);
+            enemies.forEach(function(e){ 
+                var d = Math.sqrt((px-e.x)**2 + (py-e.y)**2);
+                var ang = Math.abs(Math.atan2(e.y-py, e.x-px) - Math.atan2(dy, dx));
+                if(e.alive && ang < 0.3 && d < 5) { e.alive = false; score += 100; }
+            });
+        }
+
+        hud.innerHTML = "HP:" + Math.max(0, Math.floor(hp)) + " | BLS:" + ammo + " | PTS:" + score;
+        if(hp <= 0) hud.innerHTML = "HAS MUERTO | PTS:" + score + " | PULSA 0";
+    }
+
+    function updateEditor() {
+        if(inputCooldown > 0) { inputCooldown--; return; }
+        var moved = false;
+        if(keys[50] && cy > 0) { cy--; moved = true; } 
+        if(keys[56] && cy < map[0].length-1) { cy++; moved = true; } 
+        if(keys[52] && cx > 0) { cx--; moved = true; } 
+        if(keys[54] && cx < map.length-1) { cx++; moved = true; } 
+        if(keys[53]) { map[cx][cy] = (map[cx][cy] + 1) % 5; moved = true; } 
+        
+        if(moved) { 
+            inputCooldown = 3; 
+            drawEditor(); 
+        }
+    }
+
+    function drawEditor() {
+        var txt = "";
+        // Dibujamos transponiendo x e y para que se vea bien en el texto
+        for(var y=0; y<map[0].length; y++) {
+            for(var x=0; x<map.length; x++) {
+                txt += (x==cx && y==cy) ? "["+map[x][y]+"]" : " "+map[x][y]+" ";
+            }
+            txt += "\n";
+        }
+        document.getElementById('ed_text').innerHTML = txt;
+    }
+
+    function draw() {
+        if(editMode) return;
+        var zb = [];
+        for(var x=0; x<R_W; x++){
+            var cX=2*x/R_W-1, rX=dx+plx*cX, rY=dy+ply*cX, mx=Math.floor(px), my=Math.floor(py);
+            var dX=Math.abs(1/rX), dY=Math.abs(1/rY), sX, sY, stX, stY, hit=0, side;
+            if(rX<0){stX=-1; sX=(px-mx)*dX;} else {stX=1; sX=(mx+1-px)*dX;}
+            if(rY<0){stY=-1; sY=(py-my)*dY;} else {stY=1; sY=(my+1-py)*dY;}
+            while(hit==0){ 
+                if(sX<sY){sX+=dX; mx+=stX; side=0;} else {sY+=dY; my+=stY; side=1;} 
+                if(mx<0 || mx>=map.length || my<0 || my>=map[0].length || map[mx][my]==1) hit=1; 
+            }
+            var pwd=(side==0)?(sX-dX):(sY-dY); zb[x]=pwd;
+            var h=Math.floor(R_H/pwd);
+            for(var y=0; y<R_H; y++){
+                var idx=y*R_W+x, col=(y>R_H/2+h/2)?"#222":(y>R_H/2-h/2)?(side==1?"#500":"#800"):"#000";
+                if(pixels[idx].style.backgroundColor != col) pixels[idx].style.background=col;
+            }
+        }
+        renderSprites(enemies, zb, 200); renderSprites(items, zb, 100);
+    }
+
+    function renderSprites(list, zb, sz) {
+        list.forEach(function(s) {
+            if((!s.alive && s.div) || s.active === false) { if(s.div) s.div.style.display="none"; return; }
+            var sx=s.x-px, sy=s.y-py, det=1/(plx*dy-dx*ply), tY=det*(-ply*sx+plx*sy);
+            if(tY > 0.2) {
+                var sX=Math.floor((240/2)*(1+(det*(dy*sx-dx*sy))/tY)), size=Math.floor(sz/tY);
+                s.div.style.display="block"; s.div.style.width=size+"px"; s.div.style.height=size+"px";
+                s.div.style.left=(sX-size/2)+"px"; s.div.style.top=(160-size/2)+"px";
+                s.div.style.zIndex=(zb[Math.floor(sX/(240/R_W))]<tY)?"5":"15";
+            } else if(s.div) s.div.style.display="none";
+        });
+    }
+
+    function gameLoop() { update(); draw(); }
+</script>
+</body>
+</html>
