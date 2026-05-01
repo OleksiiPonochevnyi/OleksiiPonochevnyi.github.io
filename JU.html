@@ -3,125 +3,115 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JUNGLE SURVIVAL</title>
+    <title>JUNGLA</title>
     <style>
-        body { background: #051005; color: #aaffaa; font-family: monospace; margin: 0; padding: 5px; }
-        .screen { width: 230px; margin: auto; border: 1px solid #446644; background: #000; padding: 5px; }
-        .stats { border-bottom: 1px solid #446644; padding: 5px; font-size: 11px; color: #ffff00; }
-        .log { height: 70px; font-size: 13px; margin: 10px 0; border: 1px solid #224422; padding: 5px; background: #080808; overflow: hidden; }
-        .btn { display: block; width: 100%; background: #1a331a; color: #fff; border: 1px solid #446644; padding: 10px; margin: 4px 0; text-align: center; font-size: 13px; cursor: pointer; }
-        .btn-fight { background: #8b0000; border-color: #ff0000; }
-        .weapon-tag { color: #55ff55; font-size: 10px; }
+        body { background: #000; color: #0f0; font-family: monospace; margin: 0; padding: 5px; }
+        .box { width: 220px; margin: auto; border: 1px solid #0f0; padding: 4px; }
+        .stats { font-size: 11px; color: #ff0; border-bottom: 1px solid #0f0; margin-bottom: 5px; }
+        .log { height: 65px; font-size: 12px; overflow: hidden; background: #050505; padding: 2px; }
+        .btn { display: block; width: 100%; background: #111; color: #fff; border: 1px solid #0f0; padding: 8px; margin: 4px 0; font-size: 12px; text-align: center; }
+        .btn-atk { background: #400; border-color: #f00; }
     </style>
 </head>
 <body>
 
-<div class="screen">
+<div class="box">
     <div class="stats">
-        DIA: <span id="day">1</span> | HP: <span id="hp">100</span><br>
-        FOOD: <span id="food">5</span> | WATER: <span id="water">5</span>
+        D:<span id="d">1</span>|H:<span id="h">100</span>|C:<span id="c">5</span>|A:<span id="a">5</span>
     </div>
 
-    <div class="log" id="log">¡MONSTRUOS CERCA! Elige tu accion.</div>
+    <div class="log" id="log">¡JUNGLA! Sobrevive 100 dias.</div>
 
-    <div id="controls">
-        <!-- Botones Dinamicos -->
+    <div id="btns">
+        <!-- Botones aqui -->
     </div>
-    
-    <div id="inv-list" style="font-size: 10px; color: #668866; margin-top: 5px; border-top: 1px solid #222;"></div>
 </div>
 
 <script>
+    // Variables globales (Compatibles con navegadores viejos)
     var hp = 100, food = 5, water = 5, day = 1;
-    // Inventario inicial basado en tu Python
-    var inventory = ["old axe", "old gun", "knife"];
-    var weaponsData = {
-        "old axe": 10, "old gun": 20, "gun": 25, "AK-42": 40, 
-        "knife": 12, "rock": 5, "stick": 7
-    };
-    var monsterHP = 0;
-    var monsterAtk = 0;
+    var inv = ["old axe", "knife"];
+    var dmg = {"old axe": 10, "old gun": 20, "gun": 25, "AK-42": 40, "knife": 12, "rock": 5, "stick": 7};
+    var mHP = 0, mAtk = 0;
 
-    function updateUI(mode) {
-        document.getElementById('hp').innerText = hp;
-        document.getElementById('food').innerText = food;
-        document.getElementById('water').innerText = water;
-        document.getElementById('day').innerText = day;
-        document.getElementById('inv-list').innerText = "Tus armas: " + inventory.filter(i => weaponsData[i]).join(", ");
+    function render(mode) {
+        document.getElementById('d').innerHTML = day;
+        document.getElementById('h').innerHTML = hp;
+        document.getElementById('c').innerHTML = food;
+        document.getElementById('a').innerHTML = water;
 
-        var ctrl = document.getElementById('controls');
-        
+        var area = document.getElementById('btns');
+        area.innerHTML = "";
+
         if (hp <= 0 || food <= 0 || water <= 0) {
-            document.getElementById('log').innerHTML = "<b style='color:red'>GAME OVER</b>";
-            ctrl.innerHTML = '<button class="btn" onclick="location.reload()">REINTENTAR</button>';
+            document.getElementById('log').innerHTML = "MUERTO";
+            area.innerHTML = '<button class="btn" onclick="location.reload()">REINTENTAR</button>';
             return;
         }
 
-        if (mode == "fight") {
-            // Generar botones solo para las armas que tienes
-            let html = "";
-            inventory.forEach((item) => {
-                if(weaponsData[item]) {
-                    html += `<button class="btn btn-fight" onclick="atacar('${item}')">USAR ${item.toUpperCase()}</button>`;
+        if (mode == "peleando") {
+            for (var i = 0; i < inv.length; i++) {
+                var item = inv[i];
+                if (dmg[item]) {
+                    area.innerHTML += '<button class="btn btn-atk" onclick="atacar(\'' + item + '\')">USAR ' + item + '</button>';
                 }
-            });
-            ctrl.innerHTML = html;
+            }
         } else {
-            ctrl.innerHTML = '<button class="btn" onclick="action(1)">1. DORMIR (Reset HP)</button>' +
-                             '<button class="btn" onclick="action(2)">2. BUSCAR RECURSOS</button>';
+            area.innerHTML = '<button class="btn" onclick="turno(1)">1. DORMIR</button>' +
+                             '<button class="btn" onclick="turno(2)">2. BUSCAR</button>';
         }
     }
 
-    function action(choice) {
-        document.getElementById('log').innerHTML = ""; 
+    function turno(op) {
+        document.getElementById('log').innerHTML = "";
         food--; water--; day++;
 
-        if (choice == 1) {
+        if (op == 1) {
             hp = 100;
-            document.getElementById('log').innerHTML = "Dormiste. HP restaurado al 100%.";
+            document.getElementById('log').innerHTML = "Dormiste. HP al 100%.";
         } else {
             if (Math.random() > 0.4) {
                 food += 2; water += 2;
-                document.getElementById('log').innerHTML = "¡Encontraste comida y agua!";
+                document.getElementById('log').innerHTML = "Hallaste comida/agua.";
             } else {
-                let find = Math.random() > 0.5 ? "rock" : "stick";
-                inventory.push(find);
-                document.getElementById('log').innerHTML = "Encontraste: " + find;
+                var nueva = Math.random() > 0.5 ? "rock" : "stick";
+                inv.push(nueva);
+                document.getElementById('log').innerHTML = "Hallaste: " + nueva;
             }
         }
 
         if (Math.random() <= 0.25) {
-            monsterHP = day < 20 ? 50 : (day < 40 ? 75 : 120);
-            monsterAtk = day < 20 ? 10 : (day < 40 ? 20 : 45);
-            document.getElementById('log').innerHTML = "<b style='color:red'>¡ATAQUE!</b> HP Monstruo: " + monsterHP;
-            updateUI("fight");
+            mHP = day < 20 ? 50 : (day < 40 ? 75 : 120);
+            mAtk = day < 20 ? 10 : (day < 40 ? 20 : 45);
+            document.getElementById('log').innerHTML = "¡MONSTRUO! HP:" + mHP;
+            render("peleando");
         } else {
-            updateUI("normal");
+            render("normal");
         }
     }
 
-    function atacar(armaElegida) {
-        document.getElementById('log').innerHTML = ""; 
-        var dmgPlayer = weaponsData[armaElegida];
-        
-        monsterHP -= dmgPlayer;
-        hp -= monsterAtk;
+    function atacar(arma) {
+        document.getElementById('log').innerHTML = "";
+        var dP = dmg[arma];
+        mHP -= dP;
+        hp -= mAtk;
 
-        document.getElementById('log').innerHTML = "Usaste " + armaElegida + " (-" + dmgPlayer + ")<br>Monstruo golpea (-" + monsterAtk + ")";
+        document.getElementById('log').innerHTML = "Atacas con " + arma + ". Monstruo te golpea.";
 
-        if (monsterHP <= 0) {
-            document.getElementById('log').innerHTML = "¡VICTORIA! Monstruo eliminado.<br>+1 Comida/Agua.";
+        if (mHP <= 0) {
+            document.getElementById('log').innerHTML = "¡VICTORIA! +1 recursos.";
             food++; water++;
-            updateUI("normal");
+            render("normal");
         } else if (hp > 0) {
-            document.getElementById('log').innerHTML += "<br>HP Monstruo: " + monsterHP;
-            updateUI("fight");
+            document.getElementById('log').innerHTML += " HP Monstruo: " + mHP;
+            render("peleando");
         } else {
-            updateUI("normal");
+            render("normal");
         }
     }
 
-    updateUI("normal");
+    // Iniciar
+    render("normal");
 </script>
 
 </body>
