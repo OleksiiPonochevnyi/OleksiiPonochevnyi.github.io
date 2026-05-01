@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JUNGLE SURVIVAL</title>
+    <style>
+        /* Estilo optimizado para pantallas pequeñas y Opera Mini */
+        body { 
+            background: #051005; color: #aaffaa; 
+            font-family: monospace; margin: 0; padding: 5px; 
+        }
+        .screen { 
+            width: 230px; margin: auto; border: 1px solid #446644; 
+            background: #000; padding: 5px;
+        }
+        .stats { border-bottom: 1px solid #446644; padding: 5px; font-size: 12px; color: #ffff00; }
+        .log { 
+            height: 100px; overflow: hidden; font-size: 13px; 
+            margin: 10px 0; border: 1px solid #224422; padding: 3px;
+        }
+        .btn { 
+            display: block; width: 100%; background: #1a331a; 
+            color: #fff; border: 1px solid #446644; padding: 10px; 
+            margin: 5px 0; text-align: center; text-decoration: none; font-size: 14px;
+        }
+        .btn:active { background: #446644; }
+    </style>
+</head>
+<body>
+
+<div class="screen">
+    <div class="stats">
+        DIA: <span id="day">1</span> | HP: <span id="hp">100</span><br>
+        COMIDA: <span id="food">5</span> | AGUA: <span id="water">5</span>
+    </div>
+
+    <div class="log" id="log">
+        ¡ESTAS EN LA JUNGLA! Sobrevive 100 dias.
+    </div>
+
+    <div id="controls">
+        <button class="btn" onclick="action(1)">1. DORMIR (Salud)</button>
+        <button class="btn" onclick="action(2)">2. BUSCAR RECURSOS</button>
+    </div>
+    
+    <div style="font-size: 10px; color: #668866; margin-top: 5px;" id="inv">
+        Inv: Hacha vieja, Pistola vieja
+    </div>
+</div>
+
+<script>
+    // Variables basadas en tu Python
+    var hp = 100;
+    var food = 5;
+    var water = 5;
+    var day = 1;
+    var inventory = ["Hacha vieja", "Pistola vieja"];
+    var weapons = {"Hacha vieja": 10, "Pistola vieja": 20, "Piedra": 5};
+
+    function updateUI() {
+        document.getElementById('hp').innerText = hp;
+        document.getElementById('food').innerText = food;
+        document.getElementById('water').innerText = water;
+        document.getElementById('day').innerText = day;
+        document.getElementById('inv').innerText = "Inv: " + inventory.join(", ");
+
+        if (hp <= 0 || food <= 0 || water <= 0) {
+            document.getElementById('log').innerHTML = "<b style='color:red'>HAS MUERTO EN LA JUNGLA</b>";
+            document.getElementById('controls').innerHTML = '<button class="btn" onclick="location.reload()">REINTENTAR</button>';
+        }
+        if (day >= 100) {
+            document.getElementById('log').innerHTML = "<b style='color:gold'>¡GANASTE! SOBREVIVISTE 100 DIAS</b>";
+        }
+    }
+
+    function writeLog(msg) {
+        var log = document.getElementById('log');
+        log.innerHTML = msg + "<br>" + log.innerHTML;
+    }
+
+    function action(choice) {
+        if (hp <= 0) return;
+
+        // Consumo diario (como en tu Python)
+        food--;
+        water--;
+        day++;
+
+        if (choice == 1) {
+            hp = 100;
+            writeLog("Descansaste. HP al maximo.");
+        } else {
+            var rand = Math.floor(Math.random() * 100);
+            if (rand <= 67) {
+                food += 2; water += 2;
+                writeLog("¡Encontraste suministros!");
+            } else {
+                inventory.push("Piedra");
+                writeLog("Encontraste una Piedra.");
+            }
+        }
+
+        // Evento de Monstruo (20% probabilidad)
+        if (Math.floor(Math.random() * 100) <= 20) {
+            var damage = day < 20 ? 10 : (day < 40 ? 20 : 45);
+            hp -= damage;
+            writeLog("<span style='color:red'>¡ATAQUE MONSTRUO! -" + damage + " HP</span>");
+        }
+
+        // Recompensa cada 10 dias
+        if (day % 10 == 0) {
+            food++; water++;
+            writeLog("<span style='color:yellow'>BONUS DIA " + day + "</span>");
+        }
+
+        updateUI();
+    }
+</script>
+
+</body>
+</html>
