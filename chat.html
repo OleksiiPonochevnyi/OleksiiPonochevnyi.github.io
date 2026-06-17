@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Libre Realtime</title>
+    <title>WhatsApp P2P Realtime</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { display: flex; height: 100vh; background-color: #dadbd4; }
@@ -11,8 +12,8 @@
         .header { background-color: #ededed; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .actions button { background-color: #00a884; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .chat-list { flex: 1; overflow-y: auto; }
-        .chat-item { padding: 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .chat-item:hover, .chat-item.active { background-color: #ebebeb; }
+        .chat-item { padding: 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; }
+        .chat-item.active { background-color: #ebebeb; }
         .chat-name { font-weight: 600; color: #111b21; }
         .chat-window { flex: 1; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
         .chat-header { background-color: #ededed; padding: 15px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
@@ -24,29 +25,31 @@
         .input-area { background-color: #f0f2f5; padding: 10px 15px; display: flex; gap: 10px; align-items: center; }
         .input-area input { padding: 12px; border: none; border-radius: 8px; outline: none; font-size: 1rem; }
         .input-area button { background-color: #00a884; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .placeholder-text { text-align: center; color: #667781; margin: auto; font-size: 1.2rem; padding: 10px; }
-        .status { font-size: 0.8rem; color: #667781; text-align: center; padding: 5px; background: #eee; font-weight: bold; }
+        .placeholder-text { text-align: center; color: #667781; margin: auto; font-size: 1.1rem; padding: 20px; }
+        .status { font-size: 0.8rem; color: #667781; text-align: center; padding: 8px; background: #eee; font-weight: bold; word-break: break-all; }
     </style>
 </head>
 <body>
 
     <div class="sidebar">
         <div class="header">
-            <span>WhatsApp Online</span>
-            <div class="actions"><button onclick="createNewGroup()">+ Nuevo Grupo</button></div>
+            <span>WhatsApp P2P</span>
+            <div class="actions"><button onclick="connectToFriend()">+ Conectar Amigo</button></div>
         </div>
-        <div class="status" id="connectionStatus">Conectando a la red pública...</div>
+        <div class="status" id="myIdStatus">Generando tu código de chat...</div>
         <div class="chat-list" id="chatList"></div>
     </div>
 
     <div class="chat-window" id="chatWindow">
         <div class="placeholder-text" id="placeholder">
-            Selecciona el Grupo General a la izquierda para empezar a hablar. <br><br>
-            <small>👉 Ponte tu nombre abajo antes de escribir.</small>
+            <span style="font-size: 1.4rem; font-weight: bold;">Cómo empezar:</span><br><br>
+            1. Pásale a tu amigo el código largo que te sale abajo a la izquierda.<br>
+            2. Dile a tu amigo que le dé a <b>"+ Conectar Amigo"</b> y pegue tu código.<br>
+            3. ¡Listo! Os aparecerá el chat para hablar.
         </div>
         
         <div id="activeChatContent" style="display: none; flex-direction: column; height: 100%;">
-            <div class="chat-header" id="currentChatTitle">Grupo</div>
+            <div class="chat-header" id="currentChatTitle">Chat</div>
             <div class="message-area" id="messageArea"></div>
             <div class="input-area">
                 <input type="text" id="userInput" placeholder="Tu Nombre" style="width: 130px; flex: none;" onchange="saveMyName()">
@@ -57,107 +60,88 @@
     </div>
 
     <script>
-        let socket;
-        let currentGroup = "Grupo_General";
-        let groups = { "Grupo_General": [] };
-        
-        // ID único para esta pestaña
-        const MY_ID = Math.random().toString(36).substring(7);
+        let peer;
+        let conn = null;
+        let messages = [];
+        let friendName = "Amigo";
 
-        document.getElementById('userInput').value = localStorage.getItem('wa_username') || "Amigo_" + Math.random().toString(36).substring(9);
+        document.getElementById('userInput').value = localStorage.getItem('wa_username') || "Usuario_" + Math.random().toString(36).substring(9);
 
         function saveMyName() {
             const name = document.getElementById('userInput').value.trim();
             if(name) localStorage.setItem('wa_username', name);
-            renderMessages();
         }
 
-        function initSocket() {
-            // Usamos la demo pública de PieSocket (sin registros ni llaves)
-            const socketUrl = "wss://demo.piesocket.com/v3/channel_123?api_key=VCXCEuvhGcBDP7XhiJJUDvR1e1D3wIoc75gBQL99&notify_self=1";
-            
-            socket = new WebSocket(socketUrl);
+        // Inicializar la conexión directa de PeerJS
+        function initPeer() {
+            // Creamos un ID aleatorio fácil para el chat
+            const numId = "room_" + Math.floor(100000 + Math.random() * 900000);
+            peer = new Peer(numId);
 
-            socket.onopen = () => {
-                document.getElementById('connectionStatus').innerText = "🟢 En línea (Conectado)";
-                document.getElementById('connectionStatus').style.color = "green";
-            };
+            peer.on('open', (id) => {
+                document.getElementById('myIdStatus').innerHTML = `🟢 En línea.<br>Tu código: <span style="color:#00a884; user-select:all; cursor:pointer;">${id}</span>`;
+            });
 
-            socket.onclose = () => {
-                document.getElementById('connectionStatus').innerText = "❌ Red caída. Reintentando...";
-                document.getElementById('connectionStatus').style.color = "red";
-                setTimeout(initSocket, 5000);
-            };
+            peer.on('error', (err) => {
+                console.error(err);
+                document.getElementById('myIdStatus').innerText = "❌ Error al conectar. Refresca la página.";
+                document.getElementById('myIdStatus').style.color = "red";
+            });
 
-            socket.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    
-                    // Solo hacemos caso a los mensajes que tengan nuestra marca de WhatsApp
-                    if (data.app !== "clon_wa_pibes") return;
-                    
-                    const groupName = data.group;
-
-                    if (!groups[groupName]) {
-                        groups[groupName] = [];
-                        renderGroups();
-                    }
-
-                    // Evitar meter el mismo mensaje dos veces
-                    const yaExiste = groups[groupName].some(m => m.id === data.id);
-                    if (!yaExiste) {
-                        groups[groupName].push(data);
-                        if (currentGroup === groupName) renderMessages();
-                    }
-                } catch (e) {
-                    // No es un mensaje de nuestra app, ignoramos
-                }
-            };
-        }
-
-        function renderGroups() {
-            const chatList = document.getElementById('chatList');
-            chatList.innerHTML = '';
-            Object.keys(groups).forEach(groupName => {
-                const displayTitle = groupName.replace(/_/g, " ");
-                const div = document.createElement('div');
-                div.className = `chat-item ${currentGroup === groupName ? 'active' : ''}`;
-                div.onclick = () => selectGroup(groupName);
-                div.innerHTML = `<span class="chat-name">👥 ${displayTitle}</span>`;
-                chatList.appendChild(div);
+            // Cuando un amigo se conecta a nosotros
+            peer.on('connection', (incomingConn) => {
+                conn = incomingConn;
+                setupConnection();
             });
         }
 
-        function createNewGroup() {
-            let name = prompt("Nombre del grupo (sin espacios):");
-            if (name && name.trim() !== "") {
-                const formattedName = name.trim().replace(/\s+/g, '_');
-                if (!groups[formattedName]) {
-                    groups[formattedName] = [];
-                    renderGroups();
-                    selectGroup(formattedName);
-                    
-                    sendRawWebsocket(formattedName, "Sistema", `¡Grupo ${name} activado!`);
-                }
+        // Cuando queremos conectarnos nosotros al código de un amigo
+        function connectToFriend() {
+            const friendId = prompt("Pega el código de tu amigo aquí:");
+            if (friendId && friendId.trim() !== "") {
+                document.getElementById('myIdStatus').innerText = "Conectando con tu amigo...";
+                conn = peer.connect(friendId.trim());
+                setupConnection();
             }
         }
 
-        function selectGroup(groupName) {
-            currentGroup = groupName;
-            document.getElementById('placeholder').style.display = 'none';
-            document.getElementById('activeChatContent').style.display = 'flex';
-            document.getElementById('currentChatTitle').innerText = `👥 ${groupName.replace(/_/g, " ")}`;
-            renderGroups();
-            renderMessages();
+        function setupConnection() {
+            conn.on('open', () => {
+                document.getElementById('myIdStatus').innerText = "🤝 ¡Conectado con tu amigo!";
+                document.getElementById('myIdStatus').style.color = "green";
+                
+                // Activar interfaz de chat
+                document.getElementById('placeholder').style.display = 'none';
+                document.getElementById('activeChatContent').style.display = 'flex';
+                
+                // Crear ítem en la barra lateral
+                const chatList = document.getElementById('chatList');
+                chatList.innerHTML = `<div class="chat-item active"><span class="chat-name">👤 Chat con Amigo</span></div>`;
+                
+                // Mandar nuestro nombre para saludar
+                const myName = document.getElementById('userInput').value.trim();
+                conn.send({ type: 'sys', text: `Se ha unido al chat.` });
+            });
+
+            conn.on('data', (data) => {
+                if (data.type === 'msg') {
+                    messages.push({ sender: data.sender, text: data.text });
+                    renderMessages();
+                }
+            });
+
+            conn.on('close', () => {
+                document.getElementById('myIdStatus').innerText = "❌ El amigo se desconectó.";
+                document.getElementById('myIdStatus').style.color = "red";
+            });
         }
 
         function renderMessages() {
             const messageArea = document.getElementById('messageArea');
             messageArea.innerHTML = '';
-            if (!currentGroup || !groups[currentGroup]) return;
-            const currentUser = document.getElementById('userInput').value.trim() || "Anónimo";
+            const currentUser = document.getElementById('userInput').value.trim() || "Tú";
 
-            groups[currentGroup].forEach(msg => {
+            messages.forEach(msg => {
                 const msgDiv = document.createElement('div');
                 const isMe = msg.sender.toLowerCase() === currentUser.toLowerCase();
                 msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
@@ -170,32 +154,25 @@
         function sendMessage() {
             const messageInput = document.getElementById('messageInput');
             const text = messageInput.value.trim();
-            const sender = document.getElementById('userInput').value.trim() || "Anónimo";
-            if (text === "" || !currentGroup) return;
+            const sender = document.getElementById('userInput').value.trim() || "Tú";
 
-            sendRawWebsocket(currentGroup, sender, text);
+            if (text === "" || !conn) return;
+
+            // Enviar a nuestro amigo
+            conn.send({ type: 'msg', sender: sender, text: text });
+
+            // Añadirlo a nuestra propia pantalla
+            messages.push({ sender: sender, text: text });
+            renderMessages();
+            
             messageInput.value = '';
-        }
-
-        function sendRawWebsocket(group, sender, text) {
-            if (socket && socket.readyState === WebSocket.OPEN) {
-                const payload = {
-                    app: "clon_wa_pibes",
-                    id: MY_ID + "_" + Date.now(),
-                    group: group,
-                    sender: sender,
-                    text: text
-                };
-                socket.send(JSON.stringify(payload));
-            }
         }
 
         function handleKeyPress(event) {
             if (event.key === 'Enter') sendMessage();
         }
 
-        renderGroups();
-        initSocket();
+        initPeer();
     </script>
 </body>
 </html>
