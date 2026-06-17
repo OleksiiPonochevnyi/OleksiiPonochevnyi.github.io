@@ -70,23 +70,21 @@
     </div>
 
     <script>
-        // --- CONFIGURACIÓN DE RED SEGURA (Para GitHub Pages) ---
-        const MQTT_BROKER = "broker.hivemq.com";
-        const MQTT_PORT = 443; // Puerto SSL para evitar bloqueos de seguridad https
+        // --- NUEVA CONFIGURACIÓN DE RED CON MOSQUITTO ---
+        const MQTT_BROKER = "test.mosquitto.org";
+        const MQTT_PORT = 8081; // Puerto SSL superseguro de Mosquitto
         const CLIENT_ID = "clon_wa_" + Math.random().toString(36).substring(7);
         
-        // RECOMENDACIÓN: Cambia "canal_privado_amigos" por otra palabra única para que nadie más se meta
-        const TOPIC_BASE = "canal_privado_amigos/"; 
+        // RECOMENDACIÓN: Cambia "canal_privado_amigos" por algo súper único para vosotros
+        const TOPIC_BASE = "canal_privado_amigos_9921/"; 
 
         let mqttClient;
         let currentGroup = null;
         
-        // Estructura de chats en la sesión actual
         let groups = {
             "Grupo_General": []
         };
 
-        // Recordar el nombre del usuario en este navegador
         document.getElementById('userInput').value = localStorage.getItem('wa_username') || "Amigo_" + Math.random().toString(36).substring(9);
 
         function saveMyName() {
@@ -102,7 +100,7 @@
             mqttClient.onConnectionLost = (responseObject) => {
                 document.getElementById('connectionStatus').innerText = "❌ Desconectado. Reintentando...";
                 document.getElementById('connectionStatus').style.color = "red";
-                setTimeout(initMQTT, 5000);
+                setTimeout(initMQTT, 4000);
             };
 
             mqttClient.onMessageArrived = (message) => {
@@ -115,7 +113,6 @@
                         renderGroups();
                     }
 
-                    // Evitar duplicados
                     const yaExiste = groups[groupName].some(m => m.id === data.id);
                     if (!yaExiste) {
                         groups[groupName].push(data);
@@ -130,15 +127,17 @@
 
             mqttClient.connect({
                 onSuccess: () => {
-                    document.getElementById('connectionStatus').innerText = "🟢 En línea (Listo)";
+                    document.getElementById('connectionStatus').innerText = "🟢 En línea (Conectado)";
                     document.getElementById('connectionStatus').style.color = "green";
                     mqttClient.subscribe(TOPIC_BASE + "#");
                 },
-                onFailure: () => {
-                    document.getElementById('connectionStatus').innerText = "❌ Error de red. Reintentando...";
+                onFailure: (err) => {
+                    console.log(err);
+                    document.getElementById('connectionStatus').innerText = "❌ Error de red. Reintentando en breve...";
                     setTimeout(initMQTT, 5000);
                 },
-                useSSL: true // Obligatorio para GitHub Pages
+                useSSL: true, // Requerido para GitHub Pages
+                timeout: 3
             });
         }
 
