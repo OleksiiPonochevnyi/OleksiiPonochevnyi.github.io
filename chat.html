@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Realtime GitHub</title>
-    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
+    <title>WhatsApp Libre Realtime</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { display: flex; height: 100vh; background-color: #dadbd4; }
         .sidebar { width: 35%; min-width: 300px; background-color: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
         .header { background-color: #ededed; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .actions button { background-color: #00a884; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        .actions button:hover { background-color: #008f72; }
         .chat-list { flex: 1; overflow-y: auto; }
         .chat-item { padding: 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .chat-item:hover, .chat-item.active { background-color: #ebebeb; }
@@ -37,14 +35,14 @@
             <span>WhatsApp Online</span>
             <div class="actions"><button onclick="createNewGroup()">+ Nuevo Grupo</button></div>
         </div>
-        <div class="status" id="connectionStatus">Conectando con Ably...</div>
+        <div class="status" id="connectionStatus">Conectando a la red pública...</div>
         <div class="chat-list" id="chatList"></div>
     </div>
 
     <div class="chat-window" id="chatWindow">
         <div class="placeholder-text" id="placeholder">
-            Selecciona el Grupo General para empezar a hablar. <br><br>
-            <small>👉 Ponte tu nombre abajo a la derecha antes de escribir.</small>
+            Selecciona el Grupo General a la izquierda para empezar a hablar. <br><br>
+            <small>👉 Ponte tu nombre abajo antes de escribir.</small>
         </div>
         
         <div id="activeChatContent" style="display: none; flex-direction: column; height: 100%;">
@@ -59,12 +57,12 @@
     </div>
 
     <script>
-        // === PEGA TU LLAVE AQUÍ ===
-        const ABLY_API_KEY = "PON_AQUI_TU_API_KEY"; 
-
-        let ably, globalChannel;
+        let socket;
         let currentGroup = "Grupo_General";
         let groups = { "Grupo_General": [] };
+        
+        // ID único para esta pestaña
+        const MY_ID = Math.random().toString(36).substring(7);
 
         document.getElementById('userInput').value = localStorage.getItem('wa_username') || "Amigo_" + Math.random().toString(36).substring(9);
 
@@ -74,23 +72,30 @@
             renderMessages();
         }
 
-        function initAbly() {
-            if (ABLY_API_KEY === "CQn9jg.YZ9RcQ:9cNxi6yi76QVJc1p4XRgv0OVbk_ZRs8qLqo26NAwn00") {
-                document.getElementById('connectionStatus').innerText = "❌ Falta poner tu API Key en el código";
-                document.getElementById('connectionStatus').style.color = "red";
-                return;
-            }
+        function initSocket() {
+            // Usamos la demo pública de PieSocket (sin registros ni llaves)
+            const socketUrl = "wss://demo.piesocket.com/v3/channel_123?api_key=VCXCEuvhGcBDP7XhiJJUDvR1e1D3wIoc75gBQL99&notify_self=1";
+            
+            socket = new WebSocket(socketUrl);
 
-            ably = new Ably.Realtime({ key: ABLY_API_KEY });
-
-            ably.connection.on('connected', () => {
-                document.getElementById('connectionStatus').innerText = "🟢 En línea (Conectado con Ably)";
+            socket.onopen = () => {
+                document.getElementById('connectionStatus').innerText = "🟢 En línea (Conectado)";
                 document.getElementById('connectionStatus').style.color = "green";
-                
-                globalChannel = ably.channels.get('whatsapp-global-channel');
-                
-                globalChannel.subscribe('chat-message', (message) => {
-                    const data = message.data;
+            };
+
+            socket.onclose = () => {
+                document.getElementById('connectionStatus').innerText = "❌ Red caída. Reintentando...";
+                document.getElementById('connectionStatus').style.color = "red";
+                setTimeout(initSocket, 5000);
+            };
+
+            socket.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    // Solo hacemos caso a los mensajes que tengan nuestra marca de WhatsApp
+                    if (data.app !== "clon_wa_pibes") return;
+                    
                     const groupName = data.group;
 
                     if (!groups[groupName]) {
@@ -98,18 +103,16 @@
                         renderGroups();
                     }
 
+                    // Evitar meter el mismo mensaje dos veces
                     const yaExiste = groups[groupName].some(m => m.id === data.id);
                     if (!yaExiste) {
                         groups[groupName].push(data);
                         if (currentGroup === groupName) renderMessages();
                     }
-                });
-            });
-
-            ably.connection.on('failed', () => {
-                document.getElementById('connectionStatus').innerText = "❌ Error de conexión.";
-                document.getElementById('connectionStatus').style.color = "red";
-            });
+                } catch (e) {
+                    // No es un mensaje de nuestra app, ignoramos
+                }
+            };
         }
 
         function renderGroups() {
@@ -126,7 +129,7 @@
         }
 
         function createNewGroup() {
-            let name = prompt("Nombre del nuevo grupo (sin espacios):");
+            let name = prompt("Nombre del grupo (sin espacios):");
             if (name && name.trim() !== "") {
                 const formattedName = name.trim().replace(/\s+/g, '_');
                 if (!groups[formattedName]) {
@@ -134,12 +137,7 @@
                     renderGroups();
                     selectGroup(formattedName);
                     
-                    globalChannel.publish('chat-message', {
-                        id: "sys_" + Date.now(),
-                        group: formattedName,
-                        sender: "Sistema",
-                        text: `¡Grupo ${name} creado!`
-                    });
+                    sendRawWebsocket(formattedName, "Sistema", `¡Grupo ${name} activado!`);
                 }
             }
         }
@@ -175,13 +173,21 @@
             const sender = document.getElementById('userInput').value.trim() || "Anónimo";
             if (text === "" || !currentGroup) return;
 
-            globalChannel.publish('chat-message', {
-                id: sender + "_" + Date.now() + "_" + Math.random().toString(36).substring(5),
-                group: currentGroup,
-                sender: sender,
-                text: text
-            });
+            sendRawWebsocket(currentGroup, sender, text);
             messageInput.value = '';
+        }
+
+        function sendRawWebsocket(group, sender, text) {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const payload = {
+                    app: "clon_wa_pibes",
+                    id: MY_ID + "_" + Date.now(),
+                    group: group,
+                    sender: sender,
+                    text: text
+                };
+                socket.send(JSON.stringify(payload));
+            }
         }
 
         function handleKeyPress(event) {
@@ -189,7 +195,7 @@
         }
 
         renderGroups();
-        initAbly();
+        initSocket();
     </script>
 </body>
 </html>
