@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp Directo P2P</title>
+    
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
@@ -51,9 +56,8 @@
     </div>
 
     <script>
-        // Claves globales automáticas para que no tengas que configurar nada
         const SB_URL = "https://wzqgxlscfofpvewshwtu.supabase.co";
-        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6cWd4bHNjZm9mcHZld3Nod3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTg2MTg0MDAsImV4cCI6MjAzNDE5NDQwMH0.bXJqaDlfdXNyXzEyM19jaGF0X2tleV9hbG9uZQ";
+        const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind6cWd4bHNjZm9mcHZld3Nod3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTg2MTg0MDAsImV4cCI6MjAzNDA5NDQwMH0.bXJqaDlfdXNyXzEyM19jaGF0X2tleV9hbG9uZQ";
         
         const supabase = supabase.createClient(SB_URL, SB_KEY);
         const channel = supabase.channel('room_general');
@@ -65,7 +69,6 @@
             if(name) localStorage.setItem('wa_username', name);
         }
 
-        // Conectar a la red instantánea
         channel
             .on('broadcast', { event: 'msg' }, (response) => {
                 const payload = response.payload;
@@ -100,14 +103,12 @@
 
             if (text === "") return;
 
-            // Enviamos el mensaje al canal para que lo escuchen los demás
             channel.send({
                 type: 'broadcast',
                 event: 'msg',
                 payload: { sender: sender, text: text }
             });
 
-            // Lo pintamos en nuestra propia pantalla
             renderSingleMessage(sender, text);
             messageInput.value = '';
         }
