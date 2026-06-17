@@ -4,57 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp Realtime GitHub</title>
-    <!-- Librería para conectar a los amigos en tiempo real -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+    <script src="https://cdn.ably.com/lib/ably.min-1.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { display: flex; height: 100vh; background-color: #dadbd4; }
-        
         .sidebar { width: 35%; min-width: 300px; background-color: #fff; border-right: 1px solid #ddd; display: flex; flex-direction: column; }
         .header { background-color: #ededed; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .actions button { background-color: #00a884; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         .actions button:hover { background-color: #008f72; }
-        
         .chat-list { flex: 1; overflow-y: auto; }
         .chat-item { padding: 15px; border-bottom: 1px solid #f2f2f2; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
         .chat-item:hover, .chat-item.active { background-color: #ebebeb; }
         .chat-name { font-weight: 600; color: #111b21; }
-
         .chat-window { flex: 1; display: flex; flex-direction: column; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); }
         .chat-header { background-color: #ededed; padding: 15px; font-weight: bold; font-size: 1.1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        
         .message-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 0.95rem; word-wrap: break-word; }
         .message .sender { font-size: 0.75rem; font-weight: bold; color: #e54253; margin-bottom: 3px; display: block; }
         .message.sent { background-color: #d9fdd3; align-self: flex-end; }
         .message.received { background-color: #fff; align-self: flex-start; }
-
         .input-area { background-color: #f0f2f5; padding: 10px 15px; display: flex; gap: 10px; align-items: center; }
         .input-area input { padding: 12px; border: none; border-radius: 8px; outline: none; font-size: 1rem; }
         .input-area button { background-color: #00a884; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        
         .placeholder-text { text-align: center; color: #667781; margin: auto; font-size: 1.2rem; padding: 10px; }
         .status { font-size: 0.8rem; color: #667781; text-align: center; padding: 5px; background: #eee; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- BARRA LATERAL -->
     <div class="sidebar">
         <div class="header">
             <span>WhatsApp Online</span>
-            <div class="actions">
-                <button onclick="createNewGroup()">+ Nuevo Grupo</button>
-            </div>
+            <div class="actions"><button onclick="createNewGroup()">+ Nuevo Grupo</button></div>
         </div>
-        <div class="status" id="connectionStatus">Conectando...</div>
+        <div class="status" id="connectionStatus">Conectando con Ably...</div>
         <div class="chat-list" id="chatList"></div>
     </div>
 
-    <!-- VENTANA PRINCIPAL -->
     <div class="chat-window" id="chatWindow">
         <div class="placeholder-text" id="placeholder">
-            Selecciona el Grupo General o crea uno nuevo. <br><br>
+            Selecciona el Grupo General para empezar a hablar. <br><br>
             <small>👉 Ponte tu nombre abajo a la derecha antes de escribir.</small>
         </div>
         
@@ -70,20 +59,12 @@
     </div>
 
     <script>
-        // --- NUEVA CONFIGURACIÓN DE RED CON MOSQUITTO ---
-        const MQTT_BROKER = "test.mosquitto.org";
-        const MQTT_PORT = 8081; // Puerto SSL superseguro de Mosquitto
-        const CLIENT_ID = "clon_wa_" + Math.random().toString(36).substring(7);
-        
-        // RECOMENDACIÓN: Cambia "canal_privado_amigos" por algo súper único para vosotros
-        const TOPIC_BASE = "canal_privado_amigos_9921/"; 
+        // === PEGA TU LLAVE AQUÍ ===
+        const ABLY_API_KEY = "PON_AQUI_TU_API_KEY"; 
 
-        let mqttClient;
-        let currentGroup = null;
-        
-        let groups = {
-            "Grupo_General": []
-        };
+        let ably, globalChannel;
+        let currentGroup = "Grupo_General";
+        let groups = { "Grupo_General": [] };
 
         document.getElementById('userInput').value = localStorage.getItem('wa_username') || "Amigo_" + Math.random().toString(36).substring(9);
 
@@ -93,20 +74,24 @@
             renderMessages();
         }
 
-        // --- CONEXIÓN EN TIEMPO REAL ---
-        function initMQTT() {
-            mqttClient = new Paho.MQTT.Client(MQTT_BROKER, Number(MQTT_PORT), CLIENT_ID);
-            
-            mqttClient.onConnectionLost = (responseObject) => {
-                document.getElementById('connectionStatus').innerText = "❌ Desconectado. Reintentando...";
+        function initAbly() {
+            if (ABLY_API_KEY === "CQn9jg.2s4Sdw:q1bAxtHKWXAFuDki31ofqZ4ciV4lJuith7rUwOxi1O4") {
+                document.getElementById('connectionStatus').innerText = "❌ Falta poner tu API Key en el código";
                 document.getElementById('connectionStatus').style.color = "red";
-                setTimeout(initMQTT, 4000);
-            };
+                return;
+            }
 
-            mqttClient.onMessageArrived = (message) => {
-                try {
-                    const groupName = message.destinationName.replace(TOPIC_BASE, "");
-                    const data = JSON.parse(message.payloadString);
+            ably = new Ably.Realtime({ key: ABLY_API_KEY });
+
+            ably.connection.on('connected', () => {
+                document.getElementById('connectionStatus').innerText = "🟢 En línea (Conectado con Ably)";
+                document.getElementById('connectionStatus').style.color = "green";
+                
+                globalChannel = ably.channels.get('whatsapp-global-channel');
+                
+                globalChannel.subscribe('chat-message', (message) => {
+                    const data = message.data;
+                    const groupName = data.group;
 
                     if (!groups[groupName]) {
                         groups[groupName] = [];
@@ -116,36 +101,20 @@
                     const yaExiste = groups[groupName].some(m => m.id === data.id);
                     if (!yaExiste) {
                         groups[groupName].push(data);
-                        if (currentGroup === groupName) {
-                            renderMessages();
-                        }
+                        if (currentGroup === groupName) renderMessages();
                     }
-                } catch (e) {
-                    console.error("Error al recibir mensaje", e);
-                }
-            };
+                });
+            });
 
-            mqttClient.connect({
-                onSuccess: () => {
-                    document.getElementById('connectionStatus').innerText = "🟢 En línea (Conectado)";
-                    document.getElementById('connectionStatus').style.color = "green";
-                    mqttClient.subscribe(TOPIC_BASE + "#");
-                },
-                onFailure: (err) => {
-                    console.log(err);
-                    document.getElementById('connectionStatus').innerText = "❌ Error de red. Reintentando en breve...";
-                    setTimeout(initMQTT, 5000);
-                },
-                useSSL: true, // Requerido para GitHub Pages
-                timeout: 3
+            ably.connection.on('failed', () => {
+                document.getElementById('connectionStatus').innerText = "❌ Error de conexión.";
+                document.getElementById('connectionStatus').style.color = "red";
             });
         }
 
-        // --- SISTEMA DEL CHAT ---
         function renderGroups() {
             const chatList = document.getElementById('chatList');
             chatList.innerHTML = '';
-            
             Object.keys(groups).forEach(groupName => {
                 const displayTitle = groupName.replace(/_/g, " ");
                 const div = document.createElement('div');
@@ -164,7 +133,13 @@
                     groups[formattedName] = [];
                     renderGroups();
                     selectGroup(formattedName);
-                    sendRawMessage(formattedName, "Sistema", "¡Nuevo grupo creado!");
+                    
+                    globalChannel.publish('chat-message', {
+                        id: "sys_" + Date.now(),
+                        group: formattedName,
+                        sender: "Sistema",
+                        text: `¡Grupo ${name} creado!`
+                    });
                 }
             }
         }
@@ -174,7 +149,6 @@
             document.getElementById('placeholder').style.display = 'none';
             document.getElementById('activeChatContent').style.display = 'flex';
             document.getElementById('currentChatTitle').innerText = `👥 ${groupName.replace(/_/g, " ")}`;
-            
             renderGroups();
             renderMessages();
         }
@@ -182,23 +156,16 @@
         function renderMessages() {
             const messageArea = document.getElementById('messageArea');
             messageArea.innerHTML = '';
-
             if (!currentGroup || !groups[currentGroup]) return;
-
             const currentUser = document.getElementById('userInput').value.trim() || "Anónimo";
 
             groups[currentGroup].forEach(msg => {
                 const msgDiv = document.createElement('div');
                 const isMe = msg.sender.toLowerCase() === currentUser.toLowerCase();
-                
                 msgDiv.className = `message ${isMe ? 'sent' : 'received'}`;
-                msgDiv.innerHTML = `
-                    <span class="sender">${msg.sender}</span>
-                    <div>${msg.text}</div>
-                `;
+                msgDiv.innerHTML = `<span class="sender">${msg.sender}</span><div>${msg.text}</div>`;
                 messageArea.appendChild(msgDiv);
             });
-
             messageArea.scrollTop = messageArea.scrollHeight;
         }
 
@@ -206,26 +173,15 @@
             const messageInput = document.getElementById('messageInput');
             const text = messageInput.value.trim();
             const sender = document.getElementById('userInput').value.trim() || "Anónimo";
-
             if (text === "" || !currentGroup) return;
 
-            sendRawMessage(currentGroup, sender, text);
-            messageInput.value = '';
-        }
-
-        function sendRawMessage(group, sender, text) {
-            const messagePayload = {
-                id: CLIENT_ID + "_" + Date.now() + "_" + Math.random().toString(36).substring(5),
+            globalChannel.publish('chat-message', {
+                id: sender + "_" + Date.now() + "_" + Math.random().toString(36).substring(5),
+                group: currentGroup,
                 sender: sender,
                 text: text
-            };
-
-            const message = new Paho.MQTT.Message(JSON.stringify(messagePayload));
-            message.destinationName = TOPIC_BASE + group;
-            
-            if(mqttClient && mqttClient.isConnected()) {
-                mqttClient.send(message);
-            }
+            });
+            messageInput.value = '';
         }
 
         function handleKeyPress(event) {
@@ -233,7 +189,7 @@
         }
 
         renderGroups();
-        initMQTT();
+        initAbly();
     </script>
 </body>
 </html>
