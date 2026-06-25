@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Por qué el cielo es azul</title>
+</head>
+<body>
+    <!-- Utility Strip -->
+    <div class="utility-strip">
+        <div class="utility-content">
+            <span>Ciencia • Óptica • Física Atmosférica</span>
+        </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="nav-bar">
+        <div class="nav-container">
+            <div class="nav-logo">Sky Science</div>
+            <ul class="nav-links">
+                <li><a href="#fenomeno">El Fenómeno</a></li>
+                <li><a href="#scattering">Scattering de Rayleigh</a></li>
+                <li><a href="#onda">Longitudes de Onda</a></li>
+                <li><a href="#efectos">Efectos Relacionados</a></li>
+            </ul>
+            <div class="nav-actions">
+                <form id="searchForm" class="search-form">
+                    <input id="searchInput" type="search" class="search-input" placeholder="Buscar...">
+                    <button type="submit" class="button-outline">Ir</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <main class="canvas">
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <div class="hero-container">
+                <div class="hero-content">
+                    <h1 class="display-xxl">Por qué el cielo es azul</h1>
+                    <p class="body-lg">Una explicación científica del fenómeno óptico más observado en la atmósfera terrestre</p>
+                    <div class="hero-cta">
+                        <a href="#fenomeno" class="button-primary">Descubre el Fenómeno</a>
+                        <a href="#scattering" class="button-outline">Entiende la Ciencia</a>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="chevron-left"></div>
+                    <div class="hero-placeholder">🌤</div>
+                    <div class="chevron-right"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Section -->
+        <section class="content-band" id="fenomeno">
+            <div class="container">
+                <h2 class="display-xl">El Fenómeno Observable</h2>
+                <div class="card-grid-2">
+                    <div class="card-product">
+                        <div class="card-icon">☀️</div>
+                        <h3 class="display-sm">La Luz Solar</h3>
+                        <p class="caption-md">El sol emite luz blanca que parece homogénea, pero en realidad es la combinación de todos los colores del espectro visible. Esta luz viaja 150 millones de kilómetros en el vacío espacial sin problemas, pero al entrar en la atmósfera terrestre todo cambia.</p>
+                    </div>
+                    <div class="card-product">
+                        <div class="card-icon">💨</div>
+                        <h3 class="display-sm">La Atmósfera</h3>
+                        <p class="caption-md">Nuestra atmósfera está compuesta principalmente de nitrógeno (78%), oxígeno (21%), y trazas de argón y dióxido de carbono. Estas moléculas son tremendamente pequeñas comparadas con la longitud de onda de la luz visible.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cloud Band Section -->
+        <section class="cloud-band">
+            <div class="container">
+                <h2 class="display-lg">¿Qué sucede cuando la luz solar entra?</h2>
+                <div class="card-feature">
+                    <div class="feature-content">
+                        <p class="body-md">Cuando la radiación solar atraviesa la atmósfera, interactúa con las moléculas de gas de formas asombrosas. La interacción más importante para explicar el color azul del cielo es un fenómeno llamado <strong>dispersión</strong> o <strong>scattering</strong>. Las moléculas no absorben la luz directamente, sino que la desvían en diferentes direcciones.</p>
+                        <p class="body-md">Este desvío no es aleatorio: depende fundamentalmente de la longitud de onda. Y aquí está el secreto: <strong>longitudes de onda más cortas se dispersan mucho más que las largas</strong>. Esta es una característica de la física que gobierna nuestro universo.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Scattering Section -->
+        <section class="content-band" id="scattering">
+            <div class="container">
+                <h2 class="display-xl">Scattering de Rayleigh: La Explicación Real</h2>
+                <p class="body-md">En 1871, el físico británico Lord Rayleigh describió matemáticamente cómo las partículas mucho más pequeñas que la longitud de onda de la luz dispersan esa luz. La fórmula es elegantemente simple pero profundamente significativa:</p>
+                
+                <div class="formula-box">
+                    <p class="formula-text">Intensidad de dispersión ∝ 1/λ⁴</p>
+                    <p class="caption-md">La intensidad de la dispersión es inversamente proporcional a la cuarta potencia de la longitud de onda</p>
+                </div>
+
+                <div class="card-grid-3">
+                    <div class="card-product">
+                        <h3 class="display-sm">Luz Roja</h3>
+                        <p class="body-md">Longitud de onda: ~700 nm</p>
+                        <div class="color-sample" style="background-color: #d32f2f;"></div>
+                        <p class="caption-md">Se dispersa muy poco. Por eso viaja en línea recta.</p>
+                    </div>
+                    <div class="card-product">
+                        <h3 class="display-sm">Luz Verde</h3>
+                        <p class="body-md">Longitud de onda: ~550 nm</p>
+                        <div class="color-sample" style="background-color: #7cb342;"></div>
+                        <p class="caption-md">Dispersión moderada (5x más que el rojo).</p>
+                    </div>
+                    <div class="card-product">
+                        <h3 class="display-sm">Luz Azul</h3>
+                        <p class="body-md">Longitud de onda: ~450 nm</p>
+                        <div class="color-sample" style="background-color: #024ad8;"></div>
+                        <p class="caption-md">¡Se dispersa 10 veces más que el rojo!</p>
+                    </div>
+                </div>
+
+                <div class="info-strip">
+                    <p class="body-md"><strong>El resultado:</strong> La luz azul se dispersa en todas direcciones. Cuando miras al cielo (cualquier dirección excepto directamente al sol), estás viendo principalmente luz azul que ha sido dispersada. El efecto es tan fuerte que literalmente inunda tu visión periférica.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Wave Length Section -->
+        <section class="cloud-band" id="onda">
+            <div class="container">
+                <h2 class="display-lg">Longitudes de Onda: El Factor Decisivo</h2>
+                <div class="wavelength-visual">
+                    <div class="wave-container">
+                        <div class="wave-item">
+                            <div class="wave-bar" style="width: 100%;"></div>
+                            <p class="caption-md">Rojo (700nm) = 100% dispersión relativa</p>
+                        </div>
+                        <div class="wave-item">
+                            <div class="wave-bar" style="width: 500%; background-color: #7cb342;"></div>
+                            <p class="caption-md">Verde (550nm) = 500% dispersión relativa</p>
+                        </div>
+                        <div class="wave-item">
+                            <div class="wave-bar" style="width: 1024%; background-color: #024ad8;"></div>
+                            <p class="caption-md">Azul (450nm) = 1024% dispersión relativa</p>
+                        </div>
+                        <div class="wave-item">
+                            <div class="wave-bar" style="width: 1600%; background-color: #6f42c1;"></div>
+                            <p class="caption-md">Ultravioleta (350nm) = 1600% dispersión relativa</p>
+                        </div>
+                    </div>
+                </div>
+                <p class="body-md">Esta visualización muestra por qué el cielo no es rojo, verde o violeta. El cielo es azul porque está justo en el punto óptimo donde la dispersión es tremenda (mucha más que la luz roja) pero visible al ojo humano (no como el ultravioleta).</p>
+            </div>
+        </section>
+
+        <!-- Related Effects Section -->
+        <section class="content-band" id="efectos">
+            <div class="container">
+                <h2 class="display-xl">Efectos Relacionados: Pruebas del Fenómeno</h2>
+                <div class="card-grid-2">
+                    <div class="card-product">
+                        <h3 class="display-sm">Puesta de Sol Roja</h3>
+                        <p class="body-md">Al atardecer, la luz solar atraviesa una atmósfera mucho más gruesa. La luz azul se dispersa completamente fuera de tu línea de visión. Solo los colores rojos y naranjas (longitudes de onda largas) logran llegar a tus ojos. Es la prueba directa del scattering selectivo.</p>
+                    </div>
+                    <div class="card-product">
+                        <h3 class="display-sm">Cielo en la Luna</h3>
+                        <p class="body-md">La Luna no tiene atmósfera. Por eso el cielo es completamente negro, incluso de día. Sin moléculas que dispersen la luz, sin scattering, sin color azul. Esta es la prueba definitiva de que la atmósfera es la responsable.</p>
+                    </div>
+                    <div class="card-product">
+                        <h3 class="display-sm">Cielo Rojo en Emergencias</h3>
+                        <p class="body-md">Cuando hay polvo, humo o contaminación en la atmósfera, las partículas son más grandes y dispersan toda la luz visible uniformemente. El resultado: un cielo gris o rojo apagado, no azul intenso.</p>
+                    </div>
+                    <div class="card-product">
+                        <h3 class="display-sm">Visibilidad Limitada</h3>
+                        <p class="body-md">En alta montaña, donde hay menos moléculas atmosféricas, el cielo es azul oscuro, casi púrpura. A mayor altitud = menos moléculas = menos scattering de luz azul = cielo más oscuro.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Summary Dark Slab -->
+        <section class="slab-dark">
+            <div class="container">
+                <h2 class="display-lg">La Conclusión Científica</h2>
+                <p class="body-md on-ink">El cielo es azul porque la luz azul tiene una longitud de onda corta que se dispersa violentamente en las moléculas atmosféricas de acuerdo con la ley de Rayleigh. La luz roja y naranja pasan casi sin desviarse. Cuando miras al cielo, ves principalmente luz azul que ha sido desviada desde todas las direcciones. No es magia, no es un accidente: es la física fundamental en acción, sucediendo cada segundo sobre nuestras cabezas.</p>
+                <div class="summary-stats">
+                    <div class="stat-item">
+                        <p class="display-sm">1/λ⁴</p>
+                        <p class="caption-md">La ley de dispersión</p>
+                    </div>
+                    <div class="stat-item">
+                        <p class="display-sm">~450nm</p>
+                        <p class="caption-md">Longitud de onda azul</p>
+                    </div>
+                    <div class="stat-item">
+                        <p class="display-sm">1871</p>
+                        <p class="caption-md">Año de la explicación (Rayleigh)</p>
+                    </div>
+                    <div class="stat-item">
+                        <p class="display-sm">∞</p>
+                        <p class="caption-md">Maravilla de la ciencia</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="cloud-band">
+            <div class="container">
+                <h2 class="display-lg">Preguntas Frecuentes</h2>
+                <div class="faq-container">
+                    <div class="faq-row">
+                        <h3 class="display-xs">¿Por qué no vemos el cielo violeta?</h3>
+                        <p class="body-md">El ultravioleta se dispersa incluso más que el azul, pero nuestros ojos casi no lo perciben. Además, el sol emite menos UV en el rango visible. Combinado, el azul domina perceptualmente.</p>
+                    </div>
+                    <div class="faq-row">
+                        <h3 class="display-xs">¿Por qué el cielo es más azul a mediodía?</h3>
+                        <p class="body-md">A mediodía, la luz viaja menos distancia a través de la atmósfera (línea más recta al sol). Hay menos oportunidad de que otros colores se dispersen lateralmente, así que el azul domina más.</p>
+                    </div>
+                    <div class="faq-row">
+                        <h3 class="display-xs">¿Esto ocurre en otros planetas?</h3>
+                        <p class="body-md">Sí, pero diferente. Marte tiene un cielo rojizo/marrón por el polvo. Venus tiene un cielo naranja por su atmósfera densa de CO₂. Jupiter tiene un cielo azul-grisáceo. Todo depende de la composición atmosférica y la dispersión.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer-dark">
+            <div class="container">
+                <div class="footer-grid">
+                    <div class="footer-section">
+                        <h4 class="body-emphasis">Ciencia</h4>
+                        <ul class="footer-links">
+                            <li><span class="caption-md">Óptica</span></li>
+                            <li><span class="caption-md">Física Atmosférica</span></li>
+                            <li><span class="caption-md">Lord Rayleigh</span></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4 class="body-emphasis">Recursos</h4>
+                        <ul class="footer-links">
+                            <li><span class="caption-md">Artículos</span></li>
+                            <li><span class="caption-md">Investigación</span></li>
+                            <li><span class="caption-md">Bibliografía</span></li>
+                        </ul>
+                    </div>
+                    <div class="footer-section">
+                        <h4 class="body-emphasis">Educación</h4>
+                        <ul class="footer-links">
+                            <li><span class="caption-md">Tutoriales</span></li>
+                            <li><span class="caption-md">Videos</span></li>
+                            <li><span class="caption-md">Contacto</span></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="footer-bottom">
+                    <p class="caption-sm">© 2024 Sky Science. La explicación definitiva del azul.</p>
+                </div>
+            </div>
+        </footer>
+    </main>
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var value = document.getElementById('searchInput').value.trim();
+            if (value === '67') {
+                window.location.href = '67.html';
+            }
+        });
+    </script>
+
+    <footer class="footer-bar">
+        <p>©2024 Design Systems. All rights reserved.</p>
+    </footer>
+</body>
+</html>
