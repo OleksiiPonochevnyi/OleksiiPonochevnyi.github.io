@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Пори року</title>
+</head>
+<!-- Empezamos con el fondo amarillo porque arranca en verano -->
+<body style="background-color: yellow; text-align: center; font-family: sans-serif; padding: 20px;">
+
+    <!-- El título, el texto y la foto que van a cambiar -->
+    <h1 id="titulo">Літо</h1>
+    <p id="descripcion">Літо — це найтепліша пора року. Зараз канікули, можна купатися в морі та багато гуляти.</p>
+    
+    <!-- Ponemos un tamaño fijo a la foto para que no se vea gigante -->
+    <img id="foto" src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500" alt="Літо" style="width: 400px; height: 280px; object-fit: cover; border-radius: 8px; margin: 20px auto; display: block;">
+
+    <!-- Los 4 botones obligatorios -->
+    <button onclick="cambiarAVesna()">Весна</button>
+    <button onclick="cambiarALito()">Літо</button>
+    <button onclick="cambiarAOsin()">Осінь</button>
+    <button onclick="cambiarAZyma()">Зима</button>
+
+    <script>
+        // Guardamos los elementos en variables sencillas
+        var elTitulo = document.getElementById("titulo");
+        var laDescripcion = document.getElementById("descripcion");
+        var laFoto = document.getElementById("foto");
+
+        // Función para la Primavera
+        function cambiarAVesna() {
+            elTitulo.innerText = "Весна";
+            laDescripcion.innerText = "Навесні вся природа прокидається. Починають цвісти гарні квіти і співають пташки.";
+            laFoto.src = "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=500";
+            document.body.style.backgroundColor = "lightgreen"; // Cambia el fondo a verde por JS
+        }
+
+        // Función para el Verano
+        function cambiarALito() {
+            elTitulo.innerText = "Літо";
+            laDescripcion.innerText = "Літо — це найтепліша пора року. Зараз канікули, можна купатися в морі та багато гуляти.";
+            laFoto.src = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=500";
+            document.body.style.backgroundColor = "yellow"; // Cambia el fondo a amarillo por JS
+        }
+
+        // Función para el Otoño
+        function cambiarAOsin() {
+            elTitulo.innerText = "Осінь";
+            laDescripcion.innerText = "Восени листя на деревах стає жовтим та червоним. Часто йде дощ і стає прохолодно.";
+            laFoto.src = "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=500";
+            document.body.style.backgroundColor = "orange"; // Cambia el fondo a naranja por JS
+        }
+
+        // Función para el Invierno
+        function cambiarAZyma() {
+            elTitulo.innerText = "Зима";
+            laDescripcion.innerText = "Взимку випадає білий сніг. Можна ліпити сніговика і святкувати Новий рік.";
+            laFoto.src = "https://images.unsplash.com/photo-1485594050903-8e8ee7b071a8?w=500";
+            document.body.style.backgroundColor = "lightblue"; // Cambia el fondo a azul claro por JS
+        }
+    </script>
+
+</body>
+</html>
