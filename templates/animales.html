@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Solicitudes de cuidado</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 30px 15px;
+  }
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  h1 {
+    color: #2c3e50;
+    margin-bottom: 4px;
+  }
+  a.volver {
+    color: #7f8c8d;
+    text-decoration: none;
+    font-size: 0.9rem;
+  }
+  .resumen {
+    display: flex;
+    gap: 10px;
+    margin: 18px 0 22px;
+    flex-wrap: wrap;
+  }
+  .chip {
+    background: white;
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    color: #34495e;
+  }
+  .card {
+    background: white;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    border-left: 5px solid #bdc3c7;
+  }
+  .card.pendiente { border-left-color: #f39c12; }
+  .card.aceptado { border-left-color: #27ae60; }
+  .card.rechazado { border-left-color: #e74c3c; opacity: 0.75; }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .nombre {
+    font-weight: bold;
+    color: #2c3e50;
+    font-size: 1.05rem;
+  }
+  .estado-tag {
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  .estado-tag.pendiente { background: #f39c12; }
+  .estado-tag.aceptado { background: #27ae60; }
+  .estado-tag.rechazado { background: #e74c3c; }
+
+  .detalle { color: #555; font-size: 0.92rem; margin: 8px 0; }
+  .costo { font-weight: bold; color: #27ae60; }
+
+  .acciones {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+  }
+  .acciones button {
+    border: none;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+  }
+  .btn-si { background: #27ae60; color: white; }
+  .btn-no { background: #e74c3c; color: white; }
+  .btn-eliminar { background: #ecf0f1; color: #7f8c8d; }
+  .btn-si:hover, .btn-no:hover, .btn-eliminar:hover { opacity: 0.85; }
+
+  .vacio {
+    text-align: center;
+    color: #95a5a6;
+    padding: 40px 0;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="volver" href="/">← Volver al cotizador</a>
+  <h1>📋 Solicitudes de cuidado</h1>
+
+  <div class="resumen">
+    <span class="chip">Total: {{ total }}</span>
+    <span class="chip">Pendientes: {{ total_pendientes }}</span>
+    <span class="chip">Aceptadas: {{ total_aceptadas }}</span>
+  </div>
+
+  <div id="lista">
+    {% if solicitudes|length == 0 %}
+      <p class="vacio">Todavía no hay solicitudes.</p>
+    {% endif %}
+    {% for s in solicitudes %}
+    <div class="card {{ s.estado }}" data-id="{{ s.id }}">
+      <div class="card-top">
+        <span class="nombre">{{ s.nombre_cliente }}</span>
+        <span class="estado-tag {{ s.estado }}">{{ s.estado }}</span>
+      </div>
+      <div class="detalle">
+        {{ s.tipo_mascota }} x {{ s.cantidad_mascotas }} · {{ s.noches }} noche(s)<br>
+        Del {{ s.fecha_inicio }} al {{ s.fecha_fin }}<br>
+        <span class="costo">Total: ${{ s.costo_total }}</span>
+      </div>
+      <div class="acciones">
+        {% if s.estado != 'aceptado' %}
+        <button class="btn-si" onclick="cambiarEstado('{{ s.id }}', 'aceptado')">Sí, aceptar</button>
+        {% endif %}
+        {% if s.estado != 'rechazado' %}
+        <button class="btn-no" onclick="cambiarEstado('{{ s.id }}', 'rechazado')">No, rechazar</button>
+        {% endif %}
+        <button class="btn-eliminar" onclick="eliminar('{{ s.id }}')">🗑️ Eliminar</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+async function cambiarEstado(id, estado) {
+  const res = await fetch(`/api/solicitudes/${id}/estado`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ estado }),
+  });
+  const data = await res.json();
+  if (data.ok) location.reload();
+}
+
+async function eliminar(id) {
+  if (!confirm("¿Eliminar esta solicitud?")) return;
+  const res = await fetch(`/api/solicitudes/${id}`, { method: "DELETE" });
+  const data = await res.json();
+  if (data.ok) location.reload();
+}
+</script>
+</body>
+</html>
