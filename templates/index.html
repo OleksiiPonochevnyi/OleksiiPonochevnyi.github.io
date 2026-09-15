@@ -83,6 +83,9 @@
     <p class="subtitle">Selecciona las fechas y el tipo de mascota para ver el costo.</p>
 
     <form id="form-cotizar">
+      <label for="nombre_cliente">Tu nombre</label>
+      <input type="text" id="nombre_cliente" name="nombre_cliente" placeholder="Ej. Ana Pérez">
+
       <label for="tipo_mascota">Tipo de mascota</label>
       <select id="tipo_mascota" name="tipo_mascota">
         {% for clave, nombre in nombres.items() %}
@@ -103,27 +106,34 @@
     </form>
 
     <div id="resultado"></div>
+
+    <p style="text-align:center; margin-top: 18px;">
+      <a href="/animales" style="color:#27ae60; text-decoration:none; font-size:0.9rem;">📋 Ver todas las solicitudes</a>
+    </p>
   </div>
 
 <script>
 const form = document.getElementById("form-cotizar");
 const resultadoDiv = document.getElementById("resultado");
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const payload = {
+function payloadActual() {
+  return {
+    nombre_cliente: document.getElementById("nombre_cliente").value,
     tipo_mascota: document.getElementById("tipo_mascota").value,
     cantidad: document.getElementById("cantidad").value,
     fecha_inicio: document.getElementById("fecha_inicio").value,
     fecha_fin: document.getElementById("fecha_fin").value,
   };
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
   try {
     const res = await fetch("/api/cotizar", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payloadActual()),
     });
     const data = await res.json();
 
@@ -136,7 +146,22 @@ form.addEventListener("submit", async (e) => {
         <p>Del ${data.fecha_inicio} al ${data.fecha_fin}</p>
         <p>Precio por noche: $${data.precio_por_noche}</p>
         <p class="costo">Total: $${data.costo_total}</p>
+        <button id="btn-confirmar" type="button" style="margin-top:12px;">Confirmar solicitud</button>
+        <p id="confirmado-msg" style="display:none; color:#27ae60; margin-top:8px;">✅ Solicitud enviada. Puedes verla en "Ver todas las solicitudes".</p>
       `;
+
+      document.getElementById("btn-confirmar").addEventListener("click", async () => {
+        const res2 = await fetch("/api/solicitudes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payloadActual()),
+        });
+        const data2 = await res2.json();
+        if (data2.ok) {
+          document.getElementById("btn-confirmar").style.display = "none";
+          document.getElementById("confirmado-msg").style.display = "block";
+        }
+      });
     } else {
       resultadoDiv.className = "error";
       resultadoDiv.innerHTML = `<p>⚠️ ${data.error}</p>`;
