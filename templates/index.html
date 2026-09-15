@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cuidado de Mascotas - Cotizador</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .card {
+    background: white;
+    padding: 30px 35px;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 420px;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin-bottom: 5px;
+    color: #2c3e50;
+  }
+  p.subtitle {
+    color: #7f8c8d;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+  }
+  label {
+    display: block;
+    margin-top: 14px;
+    margin-bottom: 4px;
+    font-weight: bold;
+    color: #34495e;
+    font-size: 0.9rem;
+  }
+  input, select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    font-size: 1rem;
+  }
+  button {
+    margin-top: 22px;
+    width: 100%;
+    padding: 12px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  button:hover { background: #219150; }
+  #resultado {
+    margin-top: 20px;
+    padding: 14px;
+    border-radius: 8px;
+    display: none;
+  }
+  #resultado.ok { background: #eafaf1; border: 1px solid #27ae60; }
+  #resultado.error { background: #fdecea; border: 1px solid #e74c3c; color: #c0392b; }
+  .costo {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #27ae60;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>🐾 Cotiza el cuidado de tu mascota</h1>
+    <p class="subtitle">Selecciona las fechas y el tipo de mascota para ver el costo.</p>
+
+    <form id="form-cotizar">
+      <label for="tipo_mascota">Tipo de mascota</label>
+      <select id="tipo_mascota" name="tipo_mascota">
+        {% for clave, nombre in nombres.items() %}
+        <option value="{{ clave }}">{{ nombre }} (${{ precios[clave] }}/noche)</option>
+        {% endfor %}
+      </select>
+
+      <label for="cantidad">Cantidad de mascotas</label>
+      <input type="number" id="cantidad" name="cantidad" min="1" value="1">
+
+      <label for="fecha_inicio">Fecha de inicio</label>
+      <input type="date" id="fecha_inicio" name="fecha_inicio" required>
+
+      <label for="fecha_fin">Fecha de fin</label>
+      <input type="date" id="fecha_fin" name="fecha_fin" required>
+
+      <button type="submit">Calcular costo</button>
+    </form>
+
+    <div id="resultado"></div>
+  </div>
+
+<script>
+const form = document.getElementById("form-cotizar");
+const resultadoDiv = document.getElementById("resultado");
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const payload = {
+    tipo_mascota: document.getElementById("tipo_mascota").value,
+    cantidad: document.getElementById("cantidad").value,
+    fecha_inicio: document.getElementById("fecha_inicio").value,
+    fecha_fin: document.getElementById("fecha_fin").value,
+  };
+
+  try {
+    const res = await fetch("/api/cotizar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    resultadoDiv.style.display = "block";
+
+    if (data.ok) {
+      resultadoDiv.className = "ok";
+      resultadoDiv.innerHTML = `
+        <p>${data.tipo_mascota} x ${data.cantidad_mascotas} · ${data.noches} noche(s)</p>
+        <p>Del ${data.fecha_inicio} al ${data.fecha_fin}</p>
+        <p>Precio por noche: $${data.precio_por_noche}</p>
+        <p class="costo">Total: $${data.costo_total}</p>
+      `;
+    } else {
+      resultadoDiv.className = "error";
+      resultadoDiv.innerHTML = `<p>⚠️ ${data.error}</p>`;
+    }
+  } catch (err) {
+    resultadoDiv.style.display = "block";
+    resultadoDiv.className = "error";
+    resultadoDiv.innerHTML = `<p>⚠️ Error al conectar con el servidor.</p>`;
+  }
+});
+</script>
+</body>
+</html>
