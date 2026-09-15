@@ -1,7 +1,27 @@
 from flask import Flask, render_template, request, jsonify
 from datetime import datetime, date
+import json
+import os
+import uuid
 
 app = Flask(__name__)
+
+DATA_FILE = os.path.join(os.path.dirname(__file__), "solicitudes.json")
+
+
+def cargar_solicitudes():
+    if not os.path.exists(DATA_FILE):
+        return []
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return []
+
+
+def guardar_solicitudes(solicitudes):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(solicitudes, f, ensure_ascii=False, indent=2)
 
 # Precio por noche según tipo de mascota
 PRECIOS_POR_NOCHE = {
@@ -79,6 +99,87 @@ def cotizar():
         return jsonify({"ok": True, **resultado})
     except ValueError as e:
         return jsonify({"ok": False, "error": str(e)}), 400
+
+
+@app.route("/api/solicitudes", methods=["POST"])
+def crear_solicitud():
+    """Confirma una cotización y la guarda como solicitud pendiente."""
+    data = request.get_json(silent=True) or request.form
+
+    fecha_inicio = data.get("fecha_inicio")
+    fecha_fin = data.get("fecha_fin")
+    tipo_mascota = data.get("tipo_mascota")
+    cantidad = data.get("cantidad", 1)
+    nombre_cliente = (data.get("nombre_cliente") or "").strip() or "Sin nombre"
+
+    try:
+        resultado = calcular_costo(fecha_inicio, fecha_fin, tipo_mascota, cantidad)
+    except ValueError as e:
+        return jsonify({"ok": False, "error": str(e)}), 400
+
+    nueva_solicitud = {
+        "id": str(uuid.uuid4()),
+        "nombre_cliente": nombre_cliente,
+        "tipo_mascota": resultado["tipo_mascota"],
+        "cantidad_mascotas": resultado["cantidad_mascotas"],
+        "fecha_inicio": resultado["fecha_inicio"],
+        "fecha_fin": resultado["fecha_fin"],
+        "noches": resultado["noches"],
+        "costo_total": resultado["costo_total"],
+        "estado": "pendiente",  # pendiente | aceptado | rechazado
+        "creado": datetime.now().isoformat(timespec="seconds"),
+    }
+
+    solicitudes = cargar_solicitudes()
+    solicitudes.append(nueva_solicitud)
+    guardar_solicitudes(solicitudes)
+
+    return jsonify({"ok": True, "solicitud": nueva_solicitud})
+
+
+@app.route("/animales")
+def animales():
+    solicitudes = cargar_solicitudes()
+    solicitudes.sort(key=lambda s: s["creado"], reverse=True)
+    total_pendientes = sum(1 for s in solicitudes if s["estado"] == "pendiente")
+    total_aceptadas = sum(1 for s in solicitudes if s["estado"] == "aceptado")
+    return render_template(
+        "animales.html",
+        solicitudes=solicitudes,
+        total=len(solicitudes),
+        total_pendientes=total_pendientes,
+        total_aceptadas=total_aceptadas,
+    )
+
+
+@app.route("/api/solicitudes/<solicitud_id>/estado", methods=["POST"])
+def actualizar_estado(solicitud_id):
+    data = request.get_json(silent=True) or request.form
+    nuevo_estado = data.get("estado")
+
+    if nuevo_estado not in ("aceptado", "rechazado", "pendiente"):
+        return jsonify({"ok": False, "error": "Estado no válido."}), 400
+
+    solicitudes = cargar_solicitudes()
+    for s in solicitudes:
+        if s["id"] == solicitud_id:
+            s["estado"] = nuevo_estado
+            guardar_solicitudes(solicitudes)
+            return jsonify({"ok": True, "solicitud": s})
+
+    return jsonify({"ok": False, "error": "Solicitud no encontrada."}), 404
+
+
+@app.route("/api/solicitudes/<solicitud_id>", methods=["DELETE"])
+def eliminar_solicitud(solicitud_id):
+    solicitudes = cargar_solicitudes()
+    nuevas = [s for s in solicitudes if s["id"] != solicitud_id]
+
+    if len(nuevas) == len(solicitudes):
+        return jsonify({"ok": False, "error": "Solicitud no encontrada."}), 404
+
+    guardar_solicitudes(nuevas)
+    return jsonify({"ok": True})
 
 
 if __name__ == "__main__":
